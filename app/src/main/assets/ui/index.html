@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terminater</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="terminal">
+
+<pre class="info">Welcome to Terminater!
+
+Docs:       https://terminater.dev/docs
+Donate:     https://terminater.dev/donate
+Community:  https://terminater.dev/community
+
+Working with packages:
+
+ - Search:   pkg search &lt;query&gt;
+ - Install:  pkg install &lt;package&gt;
+ - Upgrade:  pkg upgrade
+
+Subscribing to additional repositories:
+
+ - Root:     pkg install root-repo
+ - X11:      pkg install x11-repo
+
+For fixing any repository issues,
+try 'terminater-change-repo' command.
+
+Report issues at https://terminater.dev/issues
+</pre>
+
+<div class="input-line">
+<span class="symbol">~ $</span>
+<input type="text" autofocus>
+</div>
+
+</div>
+
+<!-- script.js pehle load ho, taaki addLine, playTone, input defined ho -->
+<script src="script.js"></script>
+
+<!-- download.js next, taaki vo script.js ke global functions access kar sake -->
+<script src="download.js"></script>
+
+<!-- loader.js last, taaki runScript() bhi access kar sake -->
+<script src="loader.js"></script>
+
+</body>
+</html>
