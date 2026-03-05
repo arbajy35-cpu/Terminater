@@ -2,6 +2,7 @@ package com.nexora.terminater;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.JavascriptInterface;
@@ -22,6 +23,16 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // =========================
+        // TRUE FULLSCREEN MODE
+        // =========================
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        );
+
         setContentView(R.layout.main);
 
         webView = findViewById(R.id.webview);
@@ -44,27 +55,27 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
 
-        // Enable debugging (dev tools)
+        // Enable WebView debugging
         WebView.setWebContentsDebuggingEnabled(true);
 
-        // Clear cache (prevents bridge caching bug)
+        // Clear cache
         webView.clearCache(true);
         webView.clearHistory();
 
         // =========================
-        // Add JS Bridges
+        // JS Bridges
         // =========================
         webView.addJavascriptInterface(new NativeRunner(), "AndroidNative");
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
         // =========================
-        // Load UI (FIXED PATH)
+        // Load UI
         // =========================
         webView.loadUrl("file:///android_asset/ui/index.html");
     }
 
     // ====================================================
-    // Native Runner (Primary Bridge)
+    // Native Runner
     // ====================================================
     public class NativeRunner {
 
@@ -104,7 +115,6 @@ public class MainActivity extends Activity {
             }).start();
         }
 
-        // Save script
         @JavascriptInterface
         public void saveScript(String fileName, String content) {
 
@@ -182,9 +192,7 @@ public class MainActivity extends Activity {
             String line;
 
             while ((line = reader.readLine()) != null) {
-
                 output.append(line).append("\n");
-
             }
 
             process.waitFor();
