@@ -6,6 +6,7 @@ import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
 
 import org.json.JSONObject;
 
@@ -25,48 +26,62 @@ public class MainActivity extends Activity {
 
         webView = findViewById(R.id.webview);
 
-        // ---------------------------
+        // =========================
         // WebView Settings
-        // ---------------------------
+        // =========================
         WebSettings webSettings = webView.getSettings();
+
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
 
-        webView.setWebViewClient(new WebViewClient());
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        webSettings.setAllowUniversalAccessFromFileURLs(true);
 
-        // 🔥 Important: Clear cache (prevents bridge caching bug)
+        webSettings.setDatabaseEnabled(true);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+
+        // Enable debugging (dev tools)
+        WebView.setWebContentsDebuggingEnabled(true);
+
+        // Clear cache (prevents bridge caching bug)
         webView.clearCache(true);
         webView.clearHistory();
 
-        // ---------------------------
-        // ✅ ADD BRIDGES FIRST
-        // ---------------------------
+        // =========================
+        // Add JS Bridges
+        // =========================
         webView.addJavascriptInterface(new NativeRunner(), "AndroidNative");
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
-        // ---------------------------
-        // ✅ THEN LOAD UI
-        // ---------------------------
-        webView.loadUrl("file:///android_asset/index.html");
+        // =========================
+        // Load UI (FIXED PATH)
+        // =========================
+        webView.loadUrl("file:///android_asset/ui/index.html");
     }
 
     // ====================================================
-    // Native Runner (Primary Modern Bridge)
+    // Native Runner (Primary Bridge)
     // ====================================================
     public class NativeRunner {
 
         @JavascriptInterface
         public void runNativeCommand(String commandLine) {
+
             new Thread(() -> {
+
                 try {
+
                     ProcessBuilder pb = new ProcessBuilder("sh", "-c", commandLine);
                     pb.redirectErrorStream(true);
+
                     Process process = pb.start();
 
                     BufferedReader reader = new BufferedReader(
-						new InputStreamReader(process.getInputStream())
+                            new InputStreamReader(process.getInputStream())
                     );
 
                     StringBuilder output = new StringBuilder();
@@ -81,19 +96,26 @@ public class MainActivity extends Activity {
                     sendToWebView(output.toString());
 
                 } catch (Exception e) {
+
                     sendToWebView("Error: " + e.getMessage());
+
                 }
+
             }).start();
         }
 
-        // Save script inside internal storage
+        // Save script
         @JavascriptInterface
         public void saveScript(String fileName, String content) {
+
             try {
+
                 File dir = new File(getFilesDir(), "vi_scripts");
+
                 if (!dir.exists()) dir.mkdirs();
 
                 File file = new File(dir, fileName.toLowerCase());
+
                 FileWriter writer = new FileWriter(file);
                 writer.write(content);
                 writer.close();
@@ -101,70 +123,88 @@ public class MainActivity extends Activity {
                 sendToWebView("Saved: " + fileName);
 
             } catch (Exception e) {
+
                 sendToWebView("Save Error: " + e.getMessage());
+
             }
         }
     }
 
     // ====================================================
-    // Legacy AndroidBridge (Fallback Support)
+    // Legacy Bridge
     // ====================================================
     public class AndroidBridge {
 
         @JavascriptInterface
         public void runCommand(String command) {
+
             String output = executeNativeCommand(command);
 
             runOnUiThread(() -> {
+
                 try {
+
                     webView.evaluateJavascript(
-						"printOutput(" + JSONObject.quote(output) + ");",
-						null
+                            "printOutput(" + JSONObject.quote(output) + ");",
+                            null
                     );
+
                 } catch (Exception e) {
+
                     webView.evaluateJavascript(
-						"printOutput(" + JSONObject.quote("Error: " + e.getMessage()) + ");",
-						null
+                            "printOutput(" + JSONObject.quote("Error: " + e.getMessage()) + ");",
+                            null
                     );
                 }
+
             });
         }
     }
 
     // ====================================================
-    // Shell Execution Helper
+    // Command Executor
     // ====================================================
     private String executeNativeCommand(String commandLine) {
+
         StringBuilder output = new StringBuilder();
 
         try {
+
             ProcessBuilder pb = new ProcessBuilder("sh", "-c", commandLine);
             pb.redirectErrorStream(true);
+
             Process process = pb.start();
 
             BufferedReader reader = new BufferedReader(
-				new InputStreamReader(process.getInputStream())
+                    new InputStreamReader(process.getInputStream())
             );
 
             String line;
+
             while ((line = reader.readLine()) != null) {
+
                 output.append(line).append("\n");
+
             }
 
             process.waitFor();
 
         } catch (Exception e) {
+
             output.append("Error: ").append(e.getMessage());
+
         }
 
         return output.toString();
     }
 
     // ====================================================
-    // Safe WebView Output Sender
+    // Send Output To WebView
     // ====================================================
     private void sendToWebView(String message) {
+
         String js = "printOutput(" + JSONObject.quote(message) + ");";
+
         runOnUiThread(() -> webView.evaluateJavascript(js, null));
     }
 }
