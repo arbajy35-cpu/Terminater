@@ -19,24 +19,12 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+        debug {
+        }
     }
 
     buildFeatures {
         viewBinding true
-    }
-}
-
-// ⚡ Skip encrypted assets task
-tasks.whenTaskAdded { task ->
-    if (task.name == "generateEncryptedAssets") {
-        task.enabled = false
-        println("⚡ Skipping generateEncryptedAssets task")
-    }
-}
-
-configurations.all {
-    resolutionStrategy {
-        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
     }
 }
 
@@ -46,6 +34,21 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.core:core-ktx:1.12.0'
 
-    // Kotlin fix
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+    // Force Kotlin version
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name == "generateEncryptedAssets") {
+        task.enabled = false
+        println("⚡ Skipping generateEncryptedAssets task")
+    }
 }
