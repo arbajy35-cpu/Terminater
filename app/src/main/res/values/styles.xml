@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="@android:style/Theme.Holo.Light">
-	</style>
+
+    <!-- Main App Theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+
+        <!-- Fullscreen -->
+        <item name="android:windowFullscreen">true</item>
+
+        <!-- Remove title -->
+        <item name="android:windowNoTitle">true</item>
+
+        <!-- Remove action bar -->
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <!-- Background color -->
+        <item name="android:windowBackground">@android:color/black</item>
+
+    </style>
+
 </resources>
