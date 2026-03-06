@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta charset="UTF-8">
 
-<!-- Correct viewport for Android WebView -->
 <meta name="viewport"
 content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
@@ -15,10 +15,12 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 
 <!-- GPU Trigger -->
 <style>
+
 body{
 transform: translateZ(0);
 will-change: transform, opacity, filter;
 }
+
 </style>
 
 </head>
@@ -27,7 +29,8 @@ will-change: transform, opacity, filter;
 
 <div class="terminal">
 
-<pre class="info">Welcome to Terminater!
+<pre class="info">
+Welcome to Terminater!
 
 Docs:       https://terminater.dev/docs
 Donate:     https://terminater.dev/donate
@@ -51,17 +54,25 @@ Report issues at https://terminater.dev/issues
 </pre>
 
 <div class="input-line">
+
 <span class="symbol">~ $</span>
-<input type="text" autofocus>
-</div>
+
+<input
+type="text"
+autofocus
+autocomplete="off"
+autocorrect="off"
+spellcheck="false"
+>
 
 </div>
 
-<!-- Core scripts -->
+</div>
+
+<!-- ⚡ ENGINE LOADER -->
 
 <script src="script.js"></script>
-<script src="download.js"></script>
-<script src="loader.js"></script>
 
 </body>
+
 </html>
