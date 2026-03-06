@@ -18,7 +18,7 @@ const engineFiles = [
 
 "engine/command.js",
 "engine/input.js"
-
+"canvas/crt.js"
 ];
 
 function loadEngine(index = 0){

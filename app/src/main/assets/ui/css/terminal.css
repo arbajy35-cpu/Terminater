@@ -1,0 +1,14 @@
+/* ----------------- TERMINAL ----------------- */
+.terminal{
+  padding:3px 5px;
+  min-height:100vh;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  line-height:1.05;
+  letter-spacing:0.05px;
+  font-size:10.2px;
+  transform-origin:center;
+  transform: rotateX(0.3deg) rotateY(-0.3deg);
+  filter:contrast(1.05) brightness(0.98);
+}

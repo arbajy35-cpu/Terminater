@@ -1,0 +1,25 @@
+/* ----------------- GLOBAL RESET ----------------- */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html{
+  image-rendering:pixelated;
+}
+
+body{
+  perspective:1200px;
+}
+
+html, body{
+  background:#061a0f;
+  font-family:'Share Tech Mono',monospace;
+  color:#e8e8e8;
+  height:100%;
+  overflow-x:hidden;
+  text-rendering:geometricPrecision;
+  -webkit-font-smoothing:subpixel-antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}

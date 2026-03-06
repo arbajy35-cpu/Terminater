@@ -1,0 +1,24 @@
+/* ----------------- INPUT ----------------- */
+.input-line{
+  display:flex;
+  align-items:center;
+  margin-top:2px;
+}
+
+.symbol{
+  margin-right:4px;
+  color:#00ff88;
+  text-shadow:0 0 6px #00ff88;
+}
+
+input{
+  background:transparent;
+  border:none;
+  outline:none;
+  color:#00ff88;
+  font-family:inherit;
+  font-size:10.2px;
+  flex:1;
+  caret-color:#00ff88;
+  text-shadow:0 0 6px #00ff88;
+}
