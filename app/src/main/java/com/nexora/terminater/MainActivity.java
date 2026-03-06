@@ -3,6 +3,8 @@ package com.nexora.terminater;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.JavascriptInterface;
@@ -25,8 +27,18 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         // =========================
+        // REMOVE TITLE BAR
+        // =========================
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        // =========================
         // TRUE FULLSCREEN MODE
         // =========================
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -44,18 +56,24 @@ public class MainActivity extends Activity {
 
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
+        webSettings.setDatabaseEnabled(true);
+
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
 
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
 
-        webSettings.setDatabaseEnabled(true);
+        webSettings.setMediaPlaybackRequiresUserGesture(false);
+
+        // Performance
+        webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
 
-        // Enable WebView debugging
+        // Enable DevTools debugging
         WebView.setWebContentsDebuggingEnabled(true);
 
         // Clear cache
@@ -63,13 +81,13 @@ public class MainActivity extends Activity {
         webView.clearHistory();
 
         // =========================
-        // JS Bridges
+        // JavaScript Bridges
         // =========================
         webView.addJavascriptInterface(new NativeRunner(), "AndroidNative");
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
         // =========================
-        // Load UI
+        // Load Terminal UI
         // =========================
         webView.loadUrl("file:///android_asset/ui/index.html");
     }
