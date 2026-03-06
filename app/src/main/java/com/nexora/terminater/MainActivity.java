@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
         webView = findViewById(R.id.webview);
 
         // =========================
-        // WebView Settings
+        // WEBVIEW SETTINGS
         // =========================
         WebSettings webSettings = webView.getSettings();
 
@@ -64,11 +64,17 @@ public class MainActivity extends Activity {
         webSettings.setAllowFileAccessFromFileURLs(true);
         webSettings.setAllowUniversalAccessFromFileURLs(true);
 
+        webSettings.setUseWideViewPort(true);
+        webSettings.setLoadWithOverviewMode(true);
+
         webSettings.setMediaPlaybackRequiresUserGesture(false);
 
-        // Performance
+        // PERFORMANCE BOOST
         webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+
+        // GPU HARDWARE RENDERING
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
@@ -81,19 +87,19 @@ public class MainActivity extends Activity {
         webView.clearHistory();
 
         // =========================
-        // JavaScript Bridges
+        // JAVASCRIPT BRIDGES
         // =========================
         webView.addJavascriptInterface(new NativeRunner(), "AndroidNative");
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
         // =========================
-        // Load Terminal UI
+        // LOAD TERMINAL UI
         // =========================
         webView.loadUrl("file:///android_asset/ui/index.html");
     }
 
     // ====================================================
-    // Native Runner
+    // NATIVE COMMAND RUNNER
     // ====================================================
     public class NativeRunner {
 
@@ -133,6 +139,9 @@ public class MainActivity extends Activity {
             }).start();
         }
 
+        // =========================
+        // SAVE SCRIPT SYSTEM
+        // =========================
         @JavascriptInterface
         public void saveScript(String fileName, String content) {
 
@@ -159,7 +168,7 @@ public class MainActivity extends Activity {
     }
 
     // ====================================================
-    // Legacy Bridge
+    // LEGACY COMMAND BRIDGE
     // ====================================================
     public class AndroidBridge {
 
@@ -183,6 +192,7 @@ public class MainActivity extends Activity {
                             "printOutput(" + JSONObject.quote("Error: " + e.getMessage()) + ");",
                             null
                     );
+
                 }
 
             });
@@ -190,7 +200,7 @@ public class MainActivity extends Activity {
     }
 
     // ====================================================
-    // Command Executor
+    // COMMAND EXECUTOR
     // ====================================================
     private String executeNativeCommand(String commandLine) {
 
@@ -225,7 +235,7 @@ public class MainActivity extends Activity {
     }
 
     // ====================================================
-    // Send Output To WebView
+    // SEND OUTPUT TO WEBVIEW
     // ====================================================
     private void sendToWebView(String message) {
 

@@ -1,13 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Correct viewport for Android WebView -->
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <title>Terminater</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
+<!-- GPU Trigger -->
+<style>
+body{
+transform: translateZ(0);
+will-change: transform, opacity, filter;
+}
+</style>
+
 </head>
+
 <body>
 
 <div class="terminal">
@@ -42,13 +57,10 @@ Report issues at https://terminater.dev/issues
 
 </div>
 
-<!-- script.js pehle load ho, taaki addLine, playTone, input defined ho -->
+<!-- Core scripts -->
+
 <script src="script.js"></script>
-
-<!-- download.js next, taaki vo script.js ke global functions access kar sake -->
 <script src="download.js"></script>
-
-<!-- loader.js last, taaki runScript() bhi access kar sake -->
 <script src="loader.js"></script>
 
 </body>
