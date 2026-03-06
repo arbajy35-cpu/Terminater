@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- App Name -->
+    <!-- App Name (shown during install and launcher) -->
     <string name="app_name">Terminater</string>
 
-    <!-- Remove default text -->
-    <string name="hello_world"></string>
-
-    <!-- Optional terminal texts -->
+    <!-- Optional texts used in UI -->
     <string name="loading">Initializing Terminal...</string>
     <string name="error">Command not found</string>
 
