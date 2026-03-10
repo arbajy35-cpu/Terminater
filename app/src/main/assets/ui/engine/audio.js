@@ -1,26 +1,85 @@
 // ----------------- AUDIO MODULE -----------------
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+try{
 
-// Resume Audio on first interaction (mobile fix)
-document.addEventListener("click", () => {
-  if (audioCtx.state === "suspended") audioCtx.resume();
-}, { once: true });
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-function playTone(freq, duration = 0.03, type = "square", volume = 0.06) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+document.addEventListener("click",()=>{
+if(audioCtx.state==="suspended") audioCtx.resume();
+},{once:true});
 
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+// load sound
+async function loadSound(url){
 
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
+const res = await fetch(url);
+const arr = await res.arrayBuffer();
+return await audioCtx.decodeAudioData(arr);
 
-  gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
 }
 
-window.playTone = playTone;
+let typeSound;
+let backspaceSound;
+let enterSound;
+
+(async()=>{
+
+typeSound = await loadSound("sound/type.wav");
+backspaceSound = await loadSound("sound/backspace.wav");
+enterSound = await loadSound("sound/enter.wav");
+
+console.log("Keyboard sounds ready");
+
+})();
+
+// play engine
+function playBuffer(buffer,volume=1){
+
+if(!buffer) return;
+
+const source = audioCtx.createBufferSource();
+const gain = audioCtx.createGain();
+
+source.buffer = buffer;
+gain.gain.value = volume;
+
+source.connect(gain);
+gain.connect(audioCtx.destination);
+
+source.start(0);
+
+}
+
+function playTypingSound(type){
+
+if(type==="type"){
+
+playBuffer(typeSound,0.7);
+
+}
+
+else if(type==="backspace"){
+
+playBuffer(backspaceSound,0.9);
+
+}
+
+else if(type==="enter"){
+
+playBuffer(enterSound,1);
+
+}
+
+}
+
+window.playTypingSound = playTypingSound;
+
+window.engineModuleReady = window.engineModuleReady || {};
+window.engineModuleReady.audio = true;
+
+console.log("Audio module ready");
+
+}catch(e){
+
+console.warn("Audio module crashed",e);
+window.playTypingSound=()=>{};
+
+}

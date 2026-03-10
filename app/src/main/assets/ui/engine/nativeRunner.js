@@ -1,4 +1,5 @@
 // ----------------- NATIVERUNNER.JS -----------------
+try{
 
 function runScript(commandLine) {
 
@@ -42,3 +43,15 @@ return false;
 }
 
 window.runScript = runScript;
+
+// Module ready signal
+window.engineModuleReady = window.engineModuleReady || {};
+window.engineModuleReady.nativeRunner = true;
+
+console.log("NativeRunner module ready");
+
+}catch(e){
+
+console.warn("NativeRunner module crashed", e);
+
+}

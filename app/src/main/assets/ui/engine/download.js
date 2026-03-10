@@ -1,45 +1,82 @@
-const GITHUB_RAW = "https://raw.githubusercontent.com/arbajy35-cpu/vi-scripts/main/";
-
-async function downloadPkg(pkgName){
-
-if(!pkgName) return;
-
+// ----------------- DOWNLOAD MODULE -----------------
 try{
 
-const url = `${GITHUB_RAW}${pkgName}`;
+const GITHUB_RAW = "https://raw.githubusercontent.com/arbajy35-cpu/vi-scripts/main/";
 
-addLine(`Downloading ${pkgName}...`,true);
+async function downloadPkg(pkgName) {
 
-const response = await fetch(url);
+  if (!pkgName) {
+    if (typeof addLine === "function") {
+      addLine("Error: No package name provided", false, true);
+    }
+    return;
+  }
 
-if(!response.ok) throw new Error("Not found on GitHub");
+  try {
 
-const data = await response.text();
+    const url = `${GITHUB_RAW}${pkgName}`;
 
-if(window.AndroidBridge && typeof window.AndroidBridge.saveScript === "function"){
+    if (typeof addLine === "function") {
+      addLine(`Downloading ${pkgName}...`, true);
+    }
 
-window.AndroidBridge.saveScript(pkgName,data);
+    const response = await fetch(url);
 
-addLine(`Installation complete: ${pkgName}`,true);
+    if (!response.ok) {
+      throw new Error("Not found on GitHub");
+    }
 
-playTone(800,0.06,"square",0.08);
+    const data = await response.text();
 
-}
-else{
+    if (
+      window.AndroidBridge &&
+      typeof window.AndroidBridge.saveScript === "function"
+    ) {
 
-addLine("Error: Native storage bridge not available",true);
+      window.AndroidBridge.saveScript(pkgName, data);
 
-}
+      if (typeof addLine === "function") {
+        addLine(`Installation complete: ${pkgName}`, true);
+      }
 
-}
-catch(err){
+      if (typeof playTone === "function") {
+        playTone(800, 0.06, "square", 0.08);
+      }
 
-addLine(`Error: ${err.message}`,true);
+    } 
+    else {
 
-playTone(300,0.06,"triangle",0.08);
+      if (typeof addLine === "function") {
+        addLine("Error: Native storage bridge not available", false, true);
+      }
 
-}
+    }
+
+  } 
+  catch (err) {
+
+    if (typeof addLine === "function") {
+      addLine(`Error: ${err.message}`, false, true);
+    }
+
+    if (typeof playTone === "function") {
+      playTone(300, 0.06, "triangle", 0.08);
+    }
+
+  }
 
 }
 
 window.downloadPkg = downloadPkg;
+
+// Module ready signal
+window.engineModuleReady = window.engineModuleReady || {};
+window.engineModuleReady.download = true;
+
+console.log("Download module ready");
+
+}catch(e){
+
+console.warn("Download module crashed", e);
+
+}

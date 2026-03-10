@@ -1,3 +1,6 @@
+// ----------------- COMMAND MODULE -----------------
+try{
+
 function executeCommand(command){
 
 /* pkg install */
@@ -23,18 +26,37 @@ const handled = runScript(scriptName,args);
 
 if(handled === false){
 
+if(typeof addLine === "function"){
 addLine("Error: Script execution failed",false,true);
+}
+
+if(typeof runNative === "function"){
 runNative(command);
+}
 
 }
 
 }
 else{
 
+if(typeof runNative === "function"){
 runNative(command);
+}
 
 }
 
 }
 
 window.executeCommand = executeCommand;
+
+// Module ready signal
+window.engineModuleReady = window.engineModuleReady || {};
+window.engineModuleReady.command = true;
+
+console.log("Command module ready");
+
+}catch(e){
+
+console.warn("Command module crashed", e);
+
+}
