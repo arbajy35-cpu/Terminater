@@ -7,16 +7,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
-
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.File;
-import java.io.FileWriter;
 
 public class MainActivity extends Activity {
 
@@ -52,26 +44,26 @@ public class MainActivity extends Activity {
         // =========================
         // WEBVIEW SETTINGS
         // =========================
-        WebSettings webSettings = webView.getSettings();
+        WebSettings settings = webView.getSettings();
 
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setDatabaseEnabled(true);
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
 
-        webSettings.setAllowFileAccess(true);
-        webSettings.setAllowContentAccess(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
 
-        webSettings.setAllowFileAccessFromFileURLs(true);
-        webSettings.setAllowUniversalAccessFromFileURLs(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
 
-        webSettings.setUseWideViewPort(true);
-        webSettings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
 
-        webSettings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setMediaPlaybackRequiresUserGesture(false);
 
         // PERFORMANCE BOOST
-        webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
-        webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         // GPU HARDWARE RENDERING
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -82,165 +74,20 @@ public class MainActivity extends Activity {
         // Enable DevTools debugging
         WebView.setWebContentsDebuggingEnabled(true);
 
-        // Clear cache
+        // Clear cache for clean start
         webView.clearCache(true);
         webView.clearHistory();
 
         // =========================
         // JAVASCRIPT BRIDGES
         // =========================
-        webView.addJavascriptInterface(new NativeRunner(), "AndroidNative");
-        webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
+        // Official scripts + user scripts execution
+        webView.addJavascriptInterface(new Bridge(this, webView), "AndroidBridge");
+        webView.addJavascriptInterface(new NativeManager(this, webView), "AndroidNative");
 
         // =========================
         // LOAD TERMINAL UI
         // =========================
         webView.loadUrl("file:///android_asset/ui/index.html");
-    }
-
-    // ====================================================
-    // NATIVE COMMAND RUNNER
-    // ====================================================
-    public class NativeRunner {
-
-        @JavascriptInterface
-        public void runNativeCommand(String commandLine) {
-
-            new Thread(() -> {
-
-                try {
-
-                    ProcessBuilder pb = new ProcessBuilder("sh", "-c", commandLine);
-                    pb.redirectErrorStream(true);
-
-                    Process process = pb.start();
-
-                    BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(process.getInputStream())
-                    );
-
-                    StringBuilder output = new StringBuilder();
-                    String line;
-
-                    while ((line = reader.readLine()) != null) {
-                        output.append(line).append("\n");
-                    }
-
-                    process.waitFor();
-
-                    sendToWebView(output.toString());
-
-                } catch (Exception e) {
-
-                    sendToWebView("Error: " + e.getMessage());
-
-                }
-
-            }).start();
-        }
-
-        // =========================
-        // SAVE SCRIPT SYSTEM
-        // =========================
-        @JavascriptInterface
-        public void saveScript(String fileName, String content) {
-
-            try {
-
-                File dir = new File(getFilesDir(), "vi_scripts");
-
-                if (!dir.exists()) dir.mkdirs();
-
-                File file = new File(dir, fileName.toLowerCase());
-
-                FileWriter writer = new FileWriter(file);
-                writer.write(content);
-                writer.close();
-
-                sendToWebView("Saved: " + fileName);
-
-            } catch (Exception e) {
-
-                sendToWebView("Save Error: " + e.getMessage());
-
-            }
-        }
-    }
-
-    // ====================================================
-    // LEGACY COMMAND BRIDGE
-    // ====================================================
-    public class AndroidBridge {
-
-        @JavascriptInterface
-        public void runCommand(String command) {
-
-            String output = executeNativeCommand(command);
-
-            runOnUiThread(() -> {
-
-                try {
-
-                    webView.evaluateJavascript(
-                            "printOutput(" + JSONObject.quote(output) + ");",
-                            null
-                    );
-
-                } catch (Exception e) {
-
-                    webView.evaluateJavascript(
-                            "printOutput(" + JSONObject.quote("Error: " + e.getMessage()) + ");",
-                            null
-                    );
-
-                }
-
-            });
-        }
-    }
-
-    // ====================================================
-    // COMMAND EXECUTOR
-    // ====================================================
-    private String executeNativeCommand(String commandLine) {
-
-        StringBuilder output = new StringBuilder();
-
-        try {
-
-            ProcessBuilder pb = new ProcessBuilder("sh", "-c", commandLine);
-            pb.redirectErrorStream(true);
-
-            Process process = pb.start();
-
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream())
-            );
-
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
-
-            process.waitFor();
-
-        } catch (Exception e) {
-
-            output.append("Error: ").append(e.getMessage());
-
-        }
-
-        return output.toString();
-    }
-
-    // ====================================================
-    // SEND OUTPUT TO WEBVIEW
-    // ====================================================
-    private void sendToWebView(String message) {
-
-        String js = "printOutput(" + JSONObject.quote(message) + ");";
-
-        runOnUiThread(() -> webView.evaluateJavascript(js, null));
     }
 }
