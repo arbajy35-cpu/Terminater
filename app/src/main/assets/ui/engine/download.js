@@ -10,21 +10,15 @@ async function downloadPkg(pkgName) {
     }
 
     try {
-        const url = `${GITHUB_RAW}${pkgName}`;
         if(typeof addLine === "function") addLine(`Downloading ${pkgName}...`, true);
 
-        const response = await fetch(url);
-        if(!response.ok) throw new Error("Not found on GitHub");
-
-        const data = await response.text();
-
-        // save to official storage via bridge
-        if(window.AndroidBridge && typeof window.AndroidBridge.saveScript === "function"){
-            window.AndroidBridge.saveScript(pkgName, data);
-            if(typeof addLine === "function") addLine(`Installation complete: ${pkgName}`, true);
-            if(typeof playTone === "function") playTone(800, 0.06, "square", 0.08);
+        // Use AndroidBridge.downloadOfficialScript instead of saveScript
+        if(window.AndroidBridge && typeof window.AndroidBridge.downloadOfficialScript === "function"){
+            window.AndroidBridge.downloadOfficialScript(pkgName);
+            if(typeof addLine === "function") addLine(`Installation started: ${pkgName}`, true);
         } else {
             if(typeof addLine === "function") addLine("Error: Native storage bridge not available", false, true);
+            return;
         }
 
     } catch(err) {
