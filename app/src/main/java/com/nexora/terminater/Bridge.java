@@ -18,7 +18,9 @@ public class Bridge {
 
     private Context context;
     private WebView webView;
-    private static final String GITHUB_RAW = "https://raw.githubusercontent.com/arbajy35-cpu/vi-scripts/main/";
+
+    private static final String GITHUB_RAW =
+            "https://raw.githubusercontent.com/arbajy35-cpu/vi-scripts/main/";
 
     public Bridge(Context context, WebView webView) {
         this.context = context;
@@ -26,10 +28,11 @@ public class Bridge {
     }
 
     // =========================
-    // DOWNLOAD OFFICIAL SCRIPT TO BIN (READ-ONLY)
+    // DOWNLOAD OFFICIAL SCRIPT
     // =========================
     @JavascriptInterface
     public void downloadOfficialScript(String pkgName) {
+
         new Thread(() -> {
 
             if (pkgName == null || pkgName.trim().isEmpty()) {
@@ -40,9 +43,11 @@ public class Bridge {
             try {
 
                 String urlStr = GITHUB_RAW + pkgName;
+
                 URL url = new URL(urlStr);
 
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(10000);
                 conn.setReadTimeout(15000);
@@ -59,13 +64,20 @@ public class Bridge {
                 scanner.close();
 
                 // =========================
-                // SAVE IN BIN (HIDDEN SYSTEM FOLDER)
+                // BIN DIRECTORY
                 // =========================
-                File binDir = new File(context.getFilesDir(), ".terminater/home/user/bin");
+                File binDir = new File(
+                        context.getFilesDir(),
+                        ".terminater/home/user/bin"
+                );
+
                 if (!binDir.exists()) {
                     binDir.mkdirs();
                 }
 
+                // =========================
+                // SCRIPT FILE
+                // =========================
                 File file = new File(binDir, pkgName.toLowerCase());
 
                 FileWriter writer = new FileWriter(file);
@@ -73,21 +85,25 @@ public class Bridge {
                 writer.close();
 
                 // =========================
-                // MAKE SCRIPT EXECUTABLE
+                // PERMISSIONS (SYSTEM STYLE)
                 // =========================
+                file.setReadable(true);
                 file.setExecutable(true);
+                file.setWritable(false);
 
                 sendToWebView("Official script installed: " + pkgName);
 
             } catch (Exception e) {
+
                 sendToWebView("Download Error: " + e.getMessage());
+
             }
 
         }).start();
     }
 
     // =========================
-    // RUN ARBITRARY SHELL COMMAND
+    // RUN SHELL COMMAND
     // =========================
     @JavascriptInterface
     public void runCommand(String commandLine) {
@@ -98,14 +114,19 @@ public class Bridge {
 
             try {
 
-                ProcessBuilder pb = new ProcessBuilder("sh", "-c", commandLine);
+                ProcessBuilder pb =
+                        new ProcessBuilder("sh", "-c", commandLine);
+
                 pb.redirectErrorStream(true);
 
                 Process process = pb.start();
 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream())
-                );
+                BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        process.getInputStream()
+                                )
+                        );
 
                 String line;
 
@@ -116,7 +137,10 @@ public class Bridge {
                 process.waitFor();
 
             } catch (Exception e) {
-                output.append("Command Error: ").append(e.getMessage());
+
+                output.append("Command Error: ")
+                        .append(e.getMessage());
+
             }
 
             sendToWebView(output.toString());
@@ -125,12 +149,15 @@ public class Bridge {
     }
 
     // =========================
-    // SEND OUTPUT BACK TO WEBVIEW
+    // SEND OUTPUT TO TERMINAL
     // =========================
     private void sendToWebView(String message) {
 
-        String js = "printOutput(" + JSONObject.quote(message) + ");";
+        String js =
+                "printOutput(" + JSONObject.quote(message) + ");";
 
-        webView.post(() -> webView.evaluateJavascript(js, null));
+        webView.post(() ->
+                webView.evaluateJavascript(js, null)
+        );
     }
 }
