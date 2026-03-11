@@ -85,11 +85,14 @@ public class Bridge {
                 writer.close();
 
                 // =========================
-                // PERMISSIONS (SYSTEM STYLE)
+                // PERMISSIONS
                 // =========================
                 file.setReadable(true);
                 file.setExecutable(true);
                 file.setWritable(false);
+
+                // FORCE EXECUTABLE PERMISSION
+                Runtime.getRuntime().exec("chmod 755 " + file.getAbsolutePath());
 
                 sendToWebView("Official script installed: " + pkgName);
 
