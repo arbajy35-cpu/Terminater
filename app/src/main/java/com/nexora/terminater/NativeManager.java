@@ -19,7 +19,7 @@ public class NativeManager {
     }
 
     // =========================
-    // PATHS
+    // STORAGE PATHS
     // =========================
     private File getUserBinDir() {
         File dir = new File(context.getFilesDir(), ".terminater/home/user/bin");
@@ -51,7 +51,7 @@ public class NativeManager {
                 writer.write(content);
                 writer.close();
 
-                // Full permissions for user
+                // Full permissions for user scripts
                 file.setReadable(true);
                 file.setWritable(true);
                 file.setExecutable(true);
@@ -81,7 +81,7 @@ public class NativeManager {
                 else if (userCustom.exists()) target = userCustom;
                 else if (systemBin.exists()) {
                     target = systemBin;
-                    isSystem = true; // system script → feed via stdin
+                    isSystem = true; // system script → cannot read/write
                 }
 
                 if (target == null) {
@@ -89,30 +89,38 @@ public class NativeManager {
                     return;
                 }
 
-                ProcessBuilder pb = new ProcessBuilder("sh");
+                ProcessBuilder pb;
+
+                if (isSystem) {
+                    // System scripts → direct execute via path
+                    pb = new ProcessBuilder(target.getAbsolutePath());
+                } else {
+                    // User scripts → feed via stdin
+                    pb = new ProcessBuilder("sh");
+                }
+
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
 
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
-
-                // Feed system or user script safely
-                BufferedReader readerFile = new BufferedReader(new FileReader(target));
-                String line;
-                while ((line = readerFile.readLine()) != null) {
-                    writer.write(line);
-                    writer.newLine();
+                // Feed user scripts content
+                if (!isSystem) {
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                    BufferedReader readerFile = new BufferedReader(new FileReader(target));
+                    String line;
+                    while ((line = readerFile.readLine()) != null) {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                    writer.flush();
+                    writer.close();
+                    readerFile.close();
                 }
-                writer.flush();
-                writer.close();
-                readerFile.close();
 
                 // Collect output
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 StringBuilder output = new StringBuilder();
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-
+                String line;
+                while ((line = reader.readLine()) != null) output.append(line).append("\n");
                 process.waitFor();
                 sendToWebView(output.toString());
 
@@ -137,9 +145,7 @@ public class NativeManager {
 
                 StringBuilder output = new StringBuilder();
                 String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
+                while ((line = reader.readLine()) != null) output.append(line).append("\n");
 
                 process.waitFor();
                 sendToWebView(output.toString());
