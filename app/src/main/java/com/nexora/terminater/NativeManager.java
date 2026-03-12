@@ -16,6 +16,21 @@ public class NativeManager {
     public NativeManager(Context context, WebView webView) {
         this.context = context;
         this.webView = webView;
+        initDirs();
+    }
+
+    // =========================
+    // INIT DIRECTORIES
+    // =========================
+
+    private void initDirs() {
+
+        getBaseDir();
+        getUserHome();
+        getUserBinDir();
+        getUserCustomDir();
+        getSystemBinDir();
+
     }
 
     // =========================
@@ -23,69 +38,96 @@ public class NativeManager {
     // =========================
 
     private File getBaseDir() {
+
         File dir = new File(context.getFilesDir(), ".terminater/home");
+
         if (!dir.exists()) dir.mkdirs();
+
+        dir.setReadable(true,false);
+        dir.setWritable(true,false);
+        dir.setExecutable(true,false);
+
         return dir;
     }
 
     private File getUserHome() {
-        File dir = new File(getBaseDir(), "user");
-        if (!dir.exists()) dir.mkdirs();
+
+        File dir = new File(getBaseDir(),"user");
+
+        if(!dir.exists()) dir.mkdirs();
+
+        dir.setReadable(true,false);
+        dir.setWritable(true,false);
+        dir.setExecutable(true,false);
+
         return dir;
     }
 
     private File getUserBinDir() {
-        File dir = new File(getUserHome(), "bin");
-        if (!dir.exists()) dir.mkdirs();
+
+        File dir = new File(getUserHome(),"bin");
+
+        if(!dir.exists()) dir.mkdirs();
+
+        dir.setReadable(true,false);
+        dir.setWritable(true,false);
+        dir.setExecutable(true,false);
+
         return dir;
     }
 
     private File getUserCustomDir() {
-        File dir = new File(getUserHome(), "custom");
-        if (!dir.exists()) dir.mkdirs();
+
+        File dir = new File(getUserHome(),"custom");
+
+        if(!dir.exists()) dir.mkdirs();
+
+        dir.setReadable(true,false);
+        dir.setWritable(true,false);
+        dir.setExecutable(true,false);
+
         return dir;
     }
 
     private File getSystemBinDir() {
-        File dir = new File(getBaseDir(), "system/bin");
-        if (!dir.exists()) dir.mkdirs();
+
+        File dir = new File(getBaseDir(),"system/bin");
+
+        if(!dir.exists()) dir.mkdirs();
+
+        dir.setReadable(true,false);
+        dir.setWritable(false,false);
+        dir.setExecutable(true,false);
+
         return dir;
     }
 
     // =========================
-    // SAVE USER SCRIPT
+    // ELF DETECTION
     // =========================
 
-    @JavascriptInterface
-    public void saveCustomScript(String fileName, String content) {
+    private boolean isElfBinary(File file) {
 
-        new Thread(() -> {
+        try {
 
-            try {
+            FileInputStream fis = new FileInputStream(file);
 
-                File file = new File(getUserCustomDir(), fileName.toLowerCase());
+            byte[] header = new byte[4];
 
-                BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(new FileOutputStream(file))
-                );
+            fis.read(header);
+            fis.close();
 
-                writer.write(content);
-                writer.close();
+            return header[0] == 0x7F &&
+                   header[1] == 'E' &&
+                   header[2] == 'L' &&
+                   header[3] == 'F';
 
-                // user permissions
-                file.setReadable(true, false);
-                file.setWritable(true, false);
-                file.setExecutable(true, false);
+        } catch(Exception e){
 
-                sendToWebView("✅ Custom script saved: " + fileName);
+            return false;
 
-            } catch (Exception e) {
+        }
 
-                sendToWebView("❌ Save Error: " + e.getMessage());
-
-            }
-
-        }).start();
     }
 
     // =========================
@@ -93,13 +135,13 @@ public class NativeManager {
     // =========================
 
     @JavascriptInterface
-    public void installSystemPackage(String name, String script) {
+    public void installSystemPackage(String name,String script){
 
         new Thread(() -> {
 
-            try {
+            try{
 
-                File file = new File(getSystemBinDir(), name.toLowerCase());
+                File file = new File(getSystemBinDir(),name.toLowerCase());
 
                 BufferedWriter writer = new BufferedWriter(
                         new OutputStreamWriter(new FileOutputStream(file))
@@ -108,38 +150,75 @@ public class NativeManager {
                 writer.write(script);
                 writer.close();
 
-                // 🔐 secure permissions
-                file.setReadable(false, false);
-                file.setWritable(false, false);
-                file.setExecutable(true, false);
+                file.setReadable(true,false);
+                file.setWritable(false,false);
+                file.setExecutable(true,false);
 
-                sendToWebView("📦 Installed: " + name);
+                sendToWebView("📦 Installed: "+name);
 
-            } catch (Exception e) {
+            }catch(Exception e){
 
-                sendToWebView("❌ Install Error: " + e.getMessage());
+                sendToWebView("❌ Install Error: "+e.getMessage());
 
             }
 
         }).start();
+
     }
 
     // =========================
-    // FIND SCRIPT IN PATH
+    // SAVE CUSTOM SCRIPT
     // =========================
 
-    private File findScript(String name) {
+    @JavascriptInterface
+    public void saveCustomScript(String name,String content){
 
-        File userBin = new File(getUserBinDir(), name);
-        if (userBin.exists()) return userBin;
+        new Thread(() -> {
 
-        File userCustom = new File(getUserCustomDir(), name);
-        if (userCustom.exists()) return userCustom;
+            try{
 
-        File systemBin = new File(getSystemBinDir(), name);
-        if (systemBin.exists()) return systemBin;
+                File file = new File(getUserCustomDir(),name.toLowerCase());
+
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(new FileOutputStream(file))
+                );
+
+                writer.write(content);
+                writer.close();
+
+                file.setReadable(true,false);
+                file.setWritable(true,false);
+                file.setExecutable(true,false);
+
+                sendToWebView("✅ Custom script saved: "+name);
+
+            }catch(Exception e){
+
+                sendToWebView("❌ Save Error: "+e.getMessage());
+
+            }
+
+        }).start();
+
+    }
+
+    // =========================
+    // FIND SCRIPT
+    // =========================
+
+    private File findScript(String name){
+
+        File userBin = new File(getUserBinDir(),name);
+        if(userBin.exists()) return userBin;
+
+        File userCustom = new File(getUserCustomDir(),name);
+        if(userCustom.exists()) return userCustom;
+
+        File systemBin = new File(getSystemBinDir(),name);
+        if(systemBin.exists()) return systemBin;
 
         return null;
+
     }
 
     // =========================
@@ -147,24 +226,37 @@ public class NativeManager {
     // =========================
 
     @JavascriptInterface
-    public void runScript(String scriptName) {
+    public void runScript(String scriptName){
 
         new Thread(() -> {
 
-            try {
+            try{
 
                 File target = findScript(scriptName);
 
-                if (target == null) {
+                if(target == null){
 
-                    sendToWebView("⚠️ Command not found: " + scriptName);
+                    sendToWebView("⚠️ Command not found: "+scriptName);
                     return;
 
                 }
 
-                ProcessBuilder pb = new ProcessBuilder(
-                        target.getAbsolutePath()
-                );
+                ProcessBuilder pb;
+
+                if(isElfBinary(target)){
+
+                    pb = new ProcessBuilder(
+                            target.getAbsolutePath()
+                    );
+
+                }else{
+
+                    pb = new ProcessBuilder(
+                            "sh",
+                            target.getAbsolutePath()
+                    );
+
+                }
 
                 pb.redirectErrorStream(true);
 
@@ -188,7 +280,7 @@ public class NativeManager {
                 StringBuilder output = new StringBuilder();
                 String line;
 
-                while ((line = reader.readLine()) != null) {
+                while((line = reader.readLine()) != null){
 
                     output.append(line).append("\n");
 
@@ -198,13 +290,14 @@ public class NativeManager {
 
                 sendToWebView(output.toString());
 
-            } catch (Exception e) {
+            }catch(Exception e){
 
-                sendToWebView("❌ Run Error: " + e.getMessage());
+                sendToWebView("❌ Run Error: "+e.getMessage());
 
             }
 
         }).start();
+
     }
 
     // =========================
@@ -212,22 +305,20 @@ public class NativeManager {
     // =========================
 
     @JavascriptInterface
-    public void runCommand(String commandLine) {
+    public void runCommand(String commandLine){
 
         new Thread(() -> {
 
-            try {
+            try{
 
-                // 🔐 BLOCK SYSTEM ACCESS
-                if (commandLine.contains("system/bin")) {
+                if(commandLine.contains("system/bin")){
 
                     sendToWebView("❌ Permission denied");
                     return;
 
                 }
 
-                // 🔐 BLOCK PATH ESCAPE
-                if (commandLine.contains("..")) {
+                if(commandLine.contains("..")){
 
                     sendToWebView("❌ Access denied");
                     return;
@@ -262,7 +353,7 @@ public class NativeManager {
                 StringBuilder output = new StringBuilder();
                 String line;
 
-                while ((line = reader.readLine()) != null) {
+                while((line = reader.readLine()) != null){
 
                     output.append(line).append("\n");
 
@@ -272,24 +363,25 @@ public class NativeManager {
 
                 sendToWebView(output.toString());
 
-            } catch (Exception e) {
+            }catch(Exception e){
 
-                sendToWebView("❌ Command Error: " + e.getMessage());
+                sendToWebView("❌ Command Error: "+e.getMessage());
 
             }
 
         }).start();
+
     }
 
     // =========================
     // SEND OUTPUT
     // =========================
 
-    private void sendToWebView(String message) {
+    private void sendToWebView(String message){
 
-        String js = "printOutput(" + JSONObject.quote(message) + ");";
+        String js = "printOutput("+ JSONObject.quote(message) +");";
 
-        webView.post(() -> webView.evaluateJavascript(js, null));
+        webView.post(() -> webView.evaluateJavascript(js,null));
 
     }
 
