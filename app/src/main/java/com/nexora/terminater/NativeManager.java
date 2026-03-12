@@ -72,7 +72,7 @@ public class NativeManager {
                 writer.write(content);
                 writer.close();
 
-                // 🔥 Correct permissions
+                // user permissions
                 file.setReadable(true, false);
                 file.setWritable(true, false);
                 file.setExecutable(true, false);
@@ -82,6 +82,42 @@ public class NativeManager {
             } catch (Exception e) {
 
                 sendToWebView("❌ Save Error: " + e.getMessage());
+
+            }
+
+        }).start();
+    }
+
+    // =========================
+    // INSTALL SYSTEM PACKAGE
+    // =========================
+
+    @JavascriptInterface
+    public void installSystemPackage(String name, String script) {
+
+        new Thread(() -> {
+
+            try {
+
+                File file = new File(getSystemBinDir(), name.toLowerCase());
+
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(new FileOutputStream(file))
+                );
+
+                writer.write(script);
+                writer.close();
+
+                // 🔐 secure permissions
+                file.setReadable(false, false);
+                file.setWritable(false, false);
+                file.setExecutable(true, false);
+
+                sendToWebView("📦 Installed: " + name);
+
+            } catch (Exception e) {
+
+                sendToWebView("❌ Install Error: " + e.getMessage());
 
             }
 
@@ -127,19 +163,18 @@ public class NativeManager {
                 }
 
                 ProcessBuilder pb = new ProcessBuilder(
-                        "sh",
                         target.getAbsolutePath()
                 );
 
                 pb.redirectErrorStream(true);
 
-                // 🔥 working directory
                 pb.directory(getUserHome());
 
-                // PATH ENVIRONMENT
                 pb.environment().put(
                         "PATH",
                         getUserBinDir().getAbsolutePath()
+                                + ":" +
+                                getUserCustomDir().getAbsolutePath()
                                 + ":" +
                                 getSystemBinDir().getAbsolutePath()
                 );
@@ -183,6 +218,22 @@ public class NativeManager {
 
             try {
 
+                // 🔐 BLOCK SYSTEM ACCESS
+                if (commandLine.contains("system/bin")) {
+
+                    sendToWebView("❌ Permission denied");
+                    return;
+
+                }
+
+                // 🔐 BLOCK PATH ESCAPE
+                if (commandLine.contains("..")) {
+
+                    sendToWebView("❌ Access denied");
+                    return;
+
+                }
+
                 ProcessBuilder pb = new ProcessBuilder(
                         "sh",
                         "-c",
@@ -196,6 +247,8 @@ public class NativeManager {
                 pb.environment().put(
                         "PATH",
                         getUserBinDir().getAbsolutePath()
+                                + ":" +
+                                getUserCustomDir().getAbsolutePath()
                                 + ":" +
                                 getSystemBinDir().getAbsolutePath()
                 );
@@ -229,7 +282,7 @@ public class NativeManager {
     }
 
     // =========================
-    // SEND OUTPUT TO WEBVIEW
+    // SEND OUTPUT
     // =========================
 
     private void sendToWebView(String message) {
@@ -239,4 +292,5 @@ public class NativeManager {
         webView.post(() -> webView.evaluateJavascript(js, null));
 
     }
+
 }
