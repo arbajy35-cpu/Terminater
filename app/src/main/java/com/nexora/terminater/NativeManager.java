@@ -7,8 +7,10 @@ import android.webkit.WebView;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileReader;
+import java.io.OutputStreamWriter;
 import java.io.InputStreamReader;
 
 public class NativeManager {
@@ -22,18 +24,24 @@ public class NativeManager {
     }
 
     // =========================
-    // HIDDEN STORAGE PATHS
+    // STORAGE PATHS
     // =========================
-    private File getBinDir() {
-        File bin = new File(context.getFilesDir(), ".terminater/home/user/bin");
-        if (!bin.exists()) bin.mkdirs();
-        return bin;
+    private File getUserBinDir() {
+        File dir = new File(context.getFilesDir(), ".terminater/home/user/bin");
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
     }
 
-    private File getCustomDir() {
-        File custom = new File(context.getFilesDir(), ".terminater/home/user/custom");
-        if (!custom.exists()) custom.mkdirs();
-        return custom;
+    private File getUserCustomDir() {
+        File dir = new File(context.getFilesDir(), ".terminater/home/user/custom");
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
+    }
+
+    private File getSystemBinDir() {
+        File dir = new File(context.getFilesDir(), ".terminater/home/system/bin");
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
     }
 
     // =========================
@@ -43,53 +51,90 @@ public class NativeManager {
     public void saveCustomScript(String fileName, String content) {
         new Thread(() -> {
             try {
-                File file = new File(getCustomDir(), fileName.toLowerCase());
-                FileWriter writer = new FileWriter(file);
+                File file = new File(getUserCustomDir(), fileName.toLowerCase());
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new java.io.FileOutputStream(file)));
                 writer.write(content);
                 writer.close();
-                sendToWebView("Custom script saved: " + fileName);
+
+                file.setReadable(true);
+                file.setWritable(true);
+                file.setExecutable(true);
+
+                sendToWebView("✅ Custom script saved: " + fileName);
             } catch (Exception e) {
-                sendToWebView("Save Error: " + e.getMessage());
+                sendToWebView("❌ Save Error: " + e.getMessage());
             }
         }).start();
     }
 
     // =========================
-    // RUN SCRIPT (BIN or CUSTOM)
+    // RUN SCRIPT (USER OR SYSTEM)
     // =========================
     @JavascriptInterface
     public void runScript(String scriptName) {
         new Thread(() -> {
             try {
-                File binFile = new File(getBinDir(), scriptName);
-                File customFile = new File(getCustomDir(), scriptName);
-                File targetFile = binFile.exists() ? binFile : (customFile.exists() ? customFile : null);
+                File userBin = new File(getUserBinDir(), scriptName);
+                File userCustom = new File(getUserCustomDir(), scriptName);
+                File systemBin = new File(getSystemBinDir(), scriptName);
 
-                if (targetFile == null) {
-                    sendToWebView("Error: Script not found: " + scriptName);
+                File target = null;
+                boolean isSystem = false;
+
+                if (userBin.exists()) target = userBin;
+                else if (userCustom.exists()) target = userCustom;
+                else if (systemBin.exists()) {
+                    target = systemBin;
+                    isSystem = true;  // system script, feed via stdin
+                }
+
+                if (target == null) {
+                    sendToWebView("⚠️ Script not found: " + scriptName);
                     return;
                 }
 
-                // Run shell command
-                ProcessBuilder pb = new ProcessBuilder("sh", "-c", targetFile.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("sh");
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream())
-                );
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
 
+                // System script → feed via stdin, no read
+                if (isSystem) {
+                    BufferedReader readerFile = new BufferedReader(new FileReader(target));
+                    String line;
+                    while ((line = readerFile.readLine()) != null) {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                    writer.flush();
+                    readerFile.close();
+                } else {
+                    // User scripts → normal feed
+                    BufferedReader readerFile = new BufferedReader(new FileReader(target));
+                    String line;
+                    while ((line = readerFile.readLine()) != null) {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                    writer.flush();
+                    readerFile.close();
+                }
+
+                writer.close();
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 StringBuilder output = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     output.append(line).append("\n");
                 }
-                process.waitFor();
 
+                process.waitFor();
                 sendToWebView(output.toString());
 
             } catch (Exception e) {
-                sendToWebView("Run Script Error: " + e.getMessage());
+                sendToWebView("❌ Run Script Error: " + e.getMessage());
             }
         }).start();
     }
@@ -117,7 +162,7 @@ public class NativeManager {
                 sendToWebView(output.toString());
 
             } catch (Exception e) {
-                sendToWebView("Command Error: " + e.getMessage());
+                sendToWebView("❌ Command Error: " + e.getMessage());
             }
         }).start();
     }
