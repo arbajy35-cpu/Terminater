@@ -19,7 +19,7 @@ public class NativeManager {
     }
 
     // =========================
-    // BASE PATH
+    // BASE PATHS
     // =========================
 
     private File getBaseDir() {
@@ -60,6 +60,7 @@ public class NativeManager {
     public void saveCustomScript(String fileName, String content) {
 
         new Thread(() -> {
+
             try {
 
                 File file = new File(getUserCustomDir(), fileName.toLowerCase());
@@ -71,9 +72,10 @@ public class NativeManager {
                 writer.write(content);
                 writer.close();
 
-                file.setReadable(true);
-                file.setWritable(true);
-                file.setExecutable(true);
+                // 🔥 Correct permissions
+                file.setReadable(true, false);
+                file.setWritable(true, false);
+                file.setExecutable(true, false);
 
                 sendToWebView("✅ Custom script saved: " + fileName);
 
@@ -87,6 +89,24 @@ public class NativeManager {
     }
 
     // =========================
+    // FIND SCRIPT IN PATH
+    // =========================
+
+    private File findScript(String name) {
+
+        File userBin = new File(getUserBinDir(), name);
+        if (userBin.exists()) return userBin;
+
+        File userCustom = new File(getUserCustomDir(), name);
+        if (userCustom.exists()) return userCustom;
+
+        File systemBin = new File(getSystemBinDir(), name);
+        if (systemBin.exists()) return systemBin;
+
+        return null;
+    }
+
+    // =========================
     // RUN SCRIPT
     // =========================
 
@@ -97,50 +117,23 @@ public class NativeManager {
 
             try {
 
-                File userBin = new File(getUserBinDir(), scriptName);
-                File userCustom = new File(getUserCustomDir(), scriptName);
-                File systemBin = new File(getSystemBinDir(), scriptName);
-
-                File target = null;
-                boolean isSystem = false;
-
-                if (userBin.exists()) {
-
-                    target = userBin;
-
-                } else if (userCustom.exists()) {
-
-                    target = userCustom;
-
-                } else if (systemBin.exists()) {
-
-                    target = systemBin;
-                    isSystem = true;
-
-                }
+                File target = findScript(scriptName);
 
                 if (target == null) {
 
-                    sendToWebView("⚠️ Script not found: " + scriptName);
+                    sendToWebView("⚠️ Command not found: " + scriptName);
                     return;
 
                 }
 
-                ProcessBuilder pb;
-
-                if (isSystem) {
-
-                    pb = new ProcessBuilder(target.getAbsolutePath());
-
-                } else {
-
-                    pb = new ProcessBuilder("sh");
-
-                }
+                ProcessBuilder pb = new ProcessBuilder(
+                        "sh",
+                        target.getAbsolutePath()
+                );
 
                 pb.redirectErrorStream(true);
 
-                // 🔥 FIX: set working directory
+                // 🔥 working directory
                 pb.directory(getUserHome());
 
                 // PATH ENVIRONMENT
@@ -153,37 +146,11 @@ public class NativeManager {
 
                 Process process = pb.start();
 
-                if (!isSystem) {
-
-                    BufferedWriter writer = new BufferedWriter(
-                            new OutputStreamWriter(process.getOutputStream())
-                    );
-
-                    BufferedReader readerFile = new BufferedReader(
-                            new FileReader(target)
-                    );
-
-                    String line;
-
-                    while ((line = readerFile.readLine()) != null) {
-
-                        writer.write(line);
-                        writer.newLine();
-
-                    }
-
-                    writer.flush();
-                    writer.close();
-                    readerFile.close();
-
-                }
-
                 BufferedReader reader = new BufferedReader(
                         new InputStreamReader(process.getInputStream())
                 );
 
                 StringBuilder output = new StringBuilder();
-
                 String line;
 
                 while ((line = reader.readLine()) != null) {
@@ -198,7 +165,7 @@ public class NativeManager {
 
             } catch (Exception e) {
 
-                sendToWebView("❌ Run Script Error: " + e.getMessage());
+                sendToWebView("❌ Run Error: " + e.getMessage());
 
             }
 
@@ -216,14 +183,16 @@ public class NativeManager {
 
             try {
 
-                ProcessBuilder pb = new ProcessBuilder("sh", "-c", commandLine);
+                ProcessBuilder pb = new ProcessBuilder(
+                        "sh",
+                        "-c",
+                        commandLine
+                );
 
                 pb.redirectErrorStream(true);
 
-                // 🔥 FIX: working directory
                 pb.directory(getUserHome());
 
-                // PATH SUPPORT
                 pb.environment().put(
                         "PATH",
                         getUserBinDir().getAbsolutePath()
@@ -238,7 +207,6 @@ public class NativeManager {
                 );
 
                 StringBuilder output = new StringBuilder();
-
                 String line;
 
                 while ((line = reader.readLine()) != null) {
