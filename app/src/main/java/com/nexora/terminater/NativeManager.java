@@ -81,7 +81,7 @@ public class NativeManager {
                 else if (userCustom.exists()) target = userCustom;
                 else if (systemBin.exists()) {
                     target = systemBin;
-                    isSystem = true; // system script → cannot read/write
+                    isSystem = true; // system script → read/write blocked
                 }
 
                 if (target == null) {
@@ -92,7 +92,7 @@ public class NativeManager {
                 ProcessBuilder pb;
 
                 if (isSystem) {
-                    // System scripts → direct execute via path
+                    // System scripts → direct execute via absolute path
                     pb = new ProcessBuilder(target.getAbsolutePath());
                 } else {
                     // User scripts → feed via stdin
@@ -102,7 +102,7 @@ public class NativeManager {
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
 
-                // Feed user scripts content
+                // Feed user scripts content via stdin
                 if (!isSystem) {
                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
                     BufferedReader readerFile = new BufferedReader(new FileReader(target));
