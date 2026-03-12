@@ -6,12 +6,7 @@ import android.webkit.WebView;
 
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.OutputStreamWriter;
-import java.io.InputStreamReader;
+import java.io.*;
 
 public class NativeManager {
 
@@ -24,7 +19,7 @@ public class NativeManager {
     }
 
     // =========================
-    // STORAGE PATHS
+    // PATHS
     // =========================
     private File getUserBinDir() {
         File dir = new File(context.getFilesDir(), ".terminater/home/user/bin");
@@ -45,17 +40,18 @@ public class NativeManager {
     }
 
     // =========================
-    // SAVE USER SCRIPT (CUSTOM)
+    // SAVE USER SCRIPT
     // =========================
     @JavascriptInterface
     public void saveCustomScript(String fileName, String content) {
         new Thread(() -> {
             try {
                 File file = new File(getUserCustomDir(), fileName.toLowerCase());
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new java.io.FileOutputStream(file)));
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
                 writer.write(content);
                 writer.close();
 
+                // Full permissions for user
                 file.setReadable(true);
                 file.setWritable(true);
                 file.setExecutable(true);
@@ -68,7 +64,7 @@ public class NativeManager {
     }
 
     // =========================
-    // RUN SCRIPT (USER OR SYSTEM)
+    // RUN SCRIPT (USER / SYSTEM)
     // =========================
     @JavascriptInterface
     public void runScript(String scriptName) {
@@ -85,7 +81,7 @@ public class NativeManager {
                 else if (userCustom.exists()) target = userCustom;
                 else if (systemBin.exists()) {
                     target = systemBin;
-                    isSystem = true;  // system script, feed via stdin
+                    isSystem = true; // system script → feed via stdin
                 }
 
                 if (target == null) {
@@ -99,33 +95,20 @@ public class NativeManager {
 
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
 
-                // System script → feed via stdin, no read
-                if (isSystem) {
-                    BufferedReader readerFile = new BufferedReader(new FileReader(target));
-                    String line;
-                    while ((line = readerFile.readLine()) != null) {
-                        writer.write(line);
-                        writer.newLine();
-                    }
-                    writer.flush();
-                    readerFile.close();
-                } else {
-                    // User scripts → normal feed
-                    BufferedReader readerFile = new BufferedReader(new FileReader(target));
-                    String line;
-                    while ((line = readerFile.readLine()) != null) {
-                        writer.write(line);
-                        writer.newLine();
-                    }
-                    writer.flush();
-                    readerFile.close();
+                // Feed system or user script safely
+                BufferedReader readerFile = new BufferedReader(new FileReader(target));
+                String line;
+                while ((line = readerFile.readLine()) != null) {
+                    writer.write(line);
+                    writer.newLine();
                 }
-
+                writer.flush();
                 writer.close();
+                readerFile.close();
 
+                // Collect output
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 StringBuilder output = new StringBuilder();
-                String line;
                 while ((line = reader.readLine()) != null) {
                     output.append(line).append("\n");
                 }
@@ -140,7 +123,7 @@ public class NativeManager {
     }
 
     // =========================
-    // EXECUTE ARBITRARY COMMAND
+    // RUN ARBITRARY COMMAND
     // =========================
     @JavascriptInterface
     public void runCommand(String commandLine) {
