@@ -10,6 +10,10 @@ import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 
+// ✅ Correct imports for NativeManager and Bridge
+import com.nexora.terminater.core.NativeManager;
+import com.nexora.terminater.Bridge;
+
 public class MainActivity extends Activity {
 
     private WebView webView;
@@ -33,8 +37,8 @@ public class MainActivity extends Activity {
 
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         );
 
         setContentView(R.layout.main);
@@ -45,7 +49,6 @@ public class MainActivity extends Activity {
         // WEBVIEW SETTINGS
         // =========================
         WebSettings settings = webView.getSettings();
-
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
@@ -81,7 +84,6 @@ public class MainActivity extends Activity {
         // =========================
         // JAVASCRIPT BRIDGES
         // =========================
-        // Official scripts + user scripts execution
         webView.addJavascriptInterface(new Bridge(this, webView), "AndroidBridge");
         webView.addJavascriptInterface(new NativeManager(this, webView), "AndroidNative");
 
