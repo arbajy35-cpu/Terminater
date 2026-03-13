@@ -2,6 +2,7 @@ package com.nexora.terminater.pkg;
 
 import android.webkit.WebView;
 import com.nexora.terminater.fs.FileSystemManager;
+
 import java.io.File;
 import java.io.FileWriter;
 
@@ -15,25 +16,35 @@ public class PackageInstaller {
         this.webView = webView;
     }
 
+    // =========================
+    // INSTALL PACKAGE TO SYSTEM BIN (SECURE)
+    // =========================
     public void install(String name, String script){
 
         try{
-            // Create target file in system bin
-            File target = new File(fs.getSystemBinDir(), name);
+            // Ensure system/bin exists
+            File systemBin = fs.getSystemBinDir();
+            if(!systemBin.exists()) systemBin.mkdirs();
 
+            // Create target file in system/bin
+            File target = new File(systemBin, name.toLowerCase());
+
+            // Write script content
             FileWriter writer = new FileWriter(target);
             writer.write(script);
             writer.close();
 
-            // Set proper permissions
-            target.setReadable(true);
-            target.setWritable(false);
-            target.setExecutable(true);
+            // =========================
+            // SET SECURE PERMISSIONS
+            // =========================
+            target.setReadable(true, false);    // owner & world can read
+            target.setWritable(false, false);   // non-writable for everyone
+            target.setExecutable(true, false);  // executable by everyone
 
-            // Force chmod 755 (in case setExecutable didn't work)
-            Runtime.getRuntime().exec("chmod 755 " + target.getAbsolutePath());
+            // Force chmod 555 for absolute security
+            Runtime.getRuntime().exec("chmod 555 " + target.getAbsolutePath());
 
-            send("✅ Package installed: " + name);
+            send("✅ Package installed securely: " + name);
 
         }catch(Exception e){
             send("❌ Install error: " + e.getMessage());
@@ -41,6 +52,9 @@ public class PackageInstaller {
 
     }
 
+    // =========================
+    // SEND MESSAGE TO WEBVIEW TERMINAL
+    // =========================
     private void send(String message){
         webView.post(() ->
                 webView.evaluateJavascript(

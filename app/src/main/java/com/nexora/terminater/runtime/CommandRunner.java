@@ -4,53 +4,107 @@ import android.webkit.WebView;
 
 import com.nexora.terminater.fs.FileSystemManager;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
 
 public class CommandRunner {
 
     private FileSystemManager fs;
     private WebView webView;
 
-    public CommandRunner(FileSystemManager fs,WebView webView){
+    public CommandRunner(FileSystemManager fs, WebView webView){
         this.fs = fs;
         this.webView = webView;
     }
 
+    // =========================
+    // RESOLVE COMMAND PATH
+    // =========================
+    public String resolve(String command){
+
+        File user = new File(fs.getUserBinDir(), command);
+        File custom = new File(fs.getUserCustomDir(), command);
+        File system = new File(fs.getSystemBinDir(), command);
+
+        if(user.exists()){
+            return user.getAbsolutePath();
+        }
+
+        if(custom.exists()){
+            return custom.getAbsolutePath();
+        }
+
+        if(system.exists()){
+            return system.getAbsolutePath();
+        }
+
+        return null;
+    }
+
+    // =========================
+    // RUN TERMINAL COMMAND
+    // =========================
     public void run(String commandLine){
 
         new Thread(() -> {
 
             try{
 
-                if(commandLine.contains("system/bin")){
-                    send("❌ Permission denied");
+                if(commandLine == null || commandLine.trim().isEmpty()){
+                    send("");
                     return;
                 }
 
-                if(commandLine.contains("..")){
+                // security sandbox
+                if(commandLine.contains("..") ||
+                        commandLine.contains(".terminater")){
                     send("❌ Access denied");
                     return;
                 }
 
-                ProcessBuilder pb = new ProcessBuilder("sh","-c",commandLine);
+                String[] parts = commandLine.trim().split(" ");
+
+                String command = parts[0];
+
+                String resolvedPath = resolve(command);
+
+                if(resolvedPath == null){
+                    send("command not found: " + command);
+                    return;
+                }
+
+                StringBuilder finalCommand =
+                        new StringBuilder(resolvedPath);
+
+                for(int i=1;i<parts.length;i++){
+                    finalCommand.append(" ").append(parts[i]);
+                }
+
+                ProcessBuilder pb =
+                        new ProcessBuilder("sh","-c", finalCommand.toString());
+
+                pb.directory(fs.getUserHome());
 
                 pb.redirectErrorStream(true);
-                pb.directory(fs.getUserHome());
 
                 pb.environment().put(
                         "PATH",
                         fs.getUserBinDir().getAbsolutePath()
-                        + ":" +
-                        fs.getUserCustomDir().getAbsolutePath()
-                        + ":" +
-                        fs.getSystemBinDir().getAbsolutePath()
+                                + ":" +
+                                fs.getUserCustomDir().getAbsolutePath()
+                                + ":" +
+                                fs.getSystemBinDir().getAbsolutePath()
                 );
 
                 Process process = pb.start();
 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream())
-                );
+                BufferedReader reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        process.getInputStream()
+                                )
+                        );
 
                 StringBuilder output = new StringBuilder();
                 String line;
@@ -63,16 +117,17 @@ public class CommandRunner {
 
                 send(output.toString());
 
-            }catch(Exception e){
-
-                send("❌ Command Error: "+e.getMessage());
-
+            }
+            catch(Exception e){
+                send("❌ Command Error: " + e.getMessage());
             }
 
         }).start();
-
     }
 
+    // =========================
+    // SEND OUTPUT TO WEBVIEW
+    // =========================
     private void send(String message){
 
         webView.post(() ->
@@ -81,7 +136,5 @@ public class CommandRunner {
                         null
                 )
         );
-
     }
-
 }

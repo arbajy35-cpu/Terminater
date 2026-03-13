@@ -10,9 +10,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 
-// ✅ Correct imports for NativeManager and Bridge
 import com.nexora.terminater.core.NativeManager;
-import com.nexora.terminater.Bridge;
+import com.nexora.terminater.fs.FileSystemManager;
 
 public class MainActivity extends Activity {
 
@@ -21,6 +20,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // =========================
+        // INITIALIZE TERMINATER FILESYSTEM
+        // =========================
+        FileSystemManager fs = new FileSystemManager(this);
+        fs.init();
 
         // =========================
         // REMOVE TITLE BAR
@@ -49,6 +54,7 @@ public class MainActivity extends Activity {
         // WEBVIEW SETTINGS
         // =========================
         WebSettings settings = webView.getSettings();
+
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);

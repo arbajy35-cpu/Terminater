@@ -1,6 +1,7 @@
 package com.nexora.terminater.fs;
 
 import android.content.Context;
+
 import java.io.File;
 
 public class FileSystemManager {
@@ -9,62 +10,99 @@ public class FileSystemManager {
 
     public FileSystemManager(Context context){
         this.context = context;
-        initDirs();
     }
 
-    private void initDirs(){
+    // =========================
+    // ROOT DIRECTORY
+    // =========================
+    public File getRoot(){
 
-        getBaseDir();
+        File root = new File(context.getFilesDir(), ".terminater/home");
+
+        if(!root.exists()){
+            root.mkdirs();
+        }
+
+        return root;
+    }
+
+    // =========================
+    // USER HOME
+    // =========================
+    public File getUserHome(){
+
+        File user = new File(getRoot(), "user");
+
+        if(!user.exists()){
+            user.mkdirs();
+        }
+
+        return user;
+    }
+
+    // =========================
+    // USER BIN
+    // =========================
+    public File getUserBinDir(){
+
+        File bin = new File(getUserHome(), "bin");
+
+        if(!bin.exists()){
+            bin.mkdirs();
+        }
+
+        return bin;
+    }
+
+    // =========================
+    // USER CUSTOM SCRIPTS
+    // =========================
+    public File getUserCustomDir(){
+
+        File custom = new File(getUserHome(), "custom");
+
+        if(!custom.exists()){
+            custom.mkdirs();
+        }
+
+        return custom;
+    }
+
+    // =========================
+    // SYSTEM BIN (OFFICIAL COMMANDS)
+    // =========================
+    public File getSystemBinDir(){
+
+        File systemBin = new File(getRoot(), "system/bin");
+
+        if(!systemBin.exists()){
+            systemBin.mkdirs();
+        }
+
+        return systemBin;
+    }
+
+    // =========================
+    // INITIALIZE FILESYSTEM
+    // =========================
+    public void init(){
+
+        // create directories
         getUserHome();
         getUserBinDir();
         getUserCustomDir();
         getSystemBinDir();
 
-    }
+        // protect system folder
+        File system = new File(getRoot(), "system");
 
-    public File getBaseDir(){
+        if(!system.exists()){
+            system.mkdirs();
+        }
 
-        File dir = new File(context.getFilesDir(), ".terminater/home");
-
-        if(!dir.exists()) dir.mkdirs();
-
-        return dir;
-    }
-
-    public File getUserHome(){
-
-        File dir = new File(getBaseDir(),"user");
-
-        if(!dir.exists()) dir.mkdirs();
-
-        return dir;
-    }
-
-    public File getUserBinDir(){
-
-        File dir = new File(getUserHome(),"bin");
-
-        if(!dir.exists()) dir.mkdirs();
-
-        return dir;
-    }
-
-    public File getUserCustomDir(){
-
-        File dir = new File(getUserHome(),"custom");
-
-        if(!dir.exists()) dir.mkdirs();
-
-        return dir;
-    }
-
-    public File getSystemBinDir(){
-
-        File dir = new File(getBaseDir(),"system/bin");
-
-        if(!dir.exists()) dir.mkdirs();
-
-        return dir;
+        system.setReadable(true,false);
+        system.setWritable(false,false);
+        system.setExecutable(true,false);
     }
 
 }
