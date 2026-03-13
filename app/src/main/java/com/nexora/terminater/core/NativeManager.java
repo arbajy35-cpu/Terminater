@@ -12,41 +12,84 @@ import com.nexora.terminater.storage.ScriptStorage;
 
 public class NativeManager {
 
-    private ScriptRunner scriptRunner;
-    private CommandRunner commandRunner;
-    private PackageInstaller packageInstaller;
-    private ScriptStorage scriptStorage;
+    private final ScriptRunner scriptRunner;
+    private final CommandRunner commandRunner;
+    private final PackageInstaller packageInstaller;
+    private final ScriptStorage scriptStorage;
 
     public NativeManager(Context context, WebView webView){
 
         FileSystemManager fs = new FileSystemManager(context);
 
-        scriptRunner = new ScriptRunner(fs,webView);
-        commandRunner = new CommandRunner(fs,webView);
+        scriptRunner = new ScriptRunner(fs, webView);
+        commandRunner = new CommandRunner(fs, webView);
 
-        packageInstaller = new PackageInstaller(fs,webView);
-        scriptStorage = new ScriptStorage(fs,webView);
-
+        packageInstaller = new PackageInstaller(fs, webView);
+        scriptStorage = new ScriptStorage(fs, webView);
     }
+
+    // ================================
+    // Run Script
+    // ================================
 
     @JavascriptInterface
     public void runScript(String name){
-        scriptRunner.run(name);
+
+        if(name == null || name.trim().isEmpty()){
+            return;
+        }
+
+        scriptRunner.run(name.trim());
     }
+
+    // ================================
+    // Run Command
+    // ================================
 
     @JavascriptInterface
     public void runCommand(String cmd){
-        commandRunner.run(cmd);
+
+        if(cmd == null || cmd.trim().isEmpty()){
+            return;
+        }
+
+        commandRunner.run(cmd.trim());
     }
 
-    @JavascriptInterface
-    public void installSystemPackage(String name,String script){
-        packageInstaller.install(name,script);
-    }
+    // ================================
+    // Install System Package
+    // ================================
 
     @JavascriptInterface
-    public void saveCustomScript(String name,String content){
-        scriptStorage.save(name,content);
+    public void installSystemPackage(String name, String script){
+
+        if(name == null || script == null){
+            return;
+        }
+
+        if(name.contains("/") || name.contains("..")){
+            return;
+        }
+
+        packageInstaller.install(name.trim(), script);
+    }
+
+    // ================================
+    // Save Custom Script
+    // ================================
+
+    @JavascriptInterface
+    public void saveCustomScript(String name, String content){
+
+        if(name == null || content == null){
+            return;
+        }
+
+        if(name.contains("/") || name.contains("..")){
+            return;
+        }
+
+        scriptStorage.save(name.trim(), content);
     }
 
 }
