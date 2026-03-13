@@ -29,9 +29,7 @@ public class CommandRunner {
         File system = new File(fs.getSystemBinDir(), command);
 
         if(user.exists()) return user.getAbsolutePath();
-
         if(custom.exists()) return custom.getAbsolutePath();
-
         if(system.exists()) return system.getAbsolutePath();
 
         return null;
@@ -47,9 +45,7 @@ public class CommandRunner {
             FileInputStream fis = new FileInputStream(file);
 
             byte[] header = new byte[4];
-
             fis.read(header);
-
             fis.close();
 
             return header[0] == 0x7F &&
@@ -57,8 +53,7 @@ public class CommandRunner {
                     header[2] == 'L' &&
                     header[3] == 'F';
 
-        }
-        catch(Exception e){
+        }catch(Exception e){
             return false;
         }
 
@@ -78,7 +73,9 @@ public class CommandRunner {
                     return;
                 }
 
-                // security sandbox
+                // =====================
+                // SECURITY SANDBOX
+                // =====================
                 if(commandLine.contains("..") ||
                         commandLine.contains(".terminater")){
                     send("❌ Access denied");
@@ -86,15 +83,15 @@ public class CommandRunner {
                 }
 
                 // =====================
-                // PARSE COMMAND
+                // NORMALIZE COMMAND
                 // =====================
-                String[] parts = commandLine.trim().split(" ");
-                String command = parts[0];
+                String[] parts = commandLine.trim().split("\\s+");
+                String command = parts[0].trim().toLowerCase();
 
                 Command builtin = new Command(fs);
 
                 // =====================
-                // BUILTIN FIRST
+                // BUILTIN COMMANDS FIRST
                 // =====================
                 switch(command){
 
@@ -124,7 +121,7 @@ public class CommandRunner {
                 String resolvedPath = resolve(command);
 
                 if(resolvedPath == null){
-                    send("command not found: " + command);
+                    send("⚠️ Command not found: " + command);
                     return;
                 }
 
@@ -147,12 +144,14 @@ public class CommandRunner {
                     pb = new ProcessBuilder(exec);
 
                 }
+
                 // =====================
                 // SCRIPT
                 // =====================
                 else{
 
                     String[] exec = new String[parts.length + 1];
+
                     exec[0] = "sh";
                     exec[1] = resolvedPath;
 
@@ -165,7 +164,6 @@ public class CommandRunner {
                 }
 
                 pb.directory(fs.getUserHome());
-
                 pb.redirectErrorStream(true);
 
                 pb.environment().put(
