@@ -6,6 +6,7 @@ import com.nexora.terminater.fs.FileSystemManager;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 
 public class CommandRunner {
@@ -27,19 +28,40 @@ public class CommandRunner {
         File custom = new File(fs.getUserCustomDir(), command);
         File system = new File(fs.getSystemBinDir(), command);
 
-        if(user.exists()){
-            return user.getAbsolutePath();
-        }
+        if(user.exists()) return user.getAbsolutePath();
 
-        if(custom.exists()){
-            return custom.getAbsolutePath();
-        }
+        if(custom.exists()) return custom.getAbsolutePath();
 
-        if(system.exists()){
-            return system.getAbsolutePath();
-        }
+        if(system.exists()) return system.getAbsolutePath();
 
         return null;
+    }
+
+    // =========================
+    // ELF DETECTOR
+    // =========================
+    private boolean isElf(File file){
+
+        try{
+
+            FileInputStream fis = new FileInputStream(file);
+
+            byte[] header = new byte[4];
+
+            fis.read(header);
+
+            fis.close();
+
+            return header[0] == 0x7F &&
+                    header[1] == 'E' &&
+                    header[2] == 'L' &&
+                    header[3] == 'F';
+
+        }
+        catch(Exception e){
+            return false;
+        }
+
     }
 
     // =========================
@@ -74,15 +96,41 @@ public class CommandRunner {
                     return;
                 }
 
-                StringBuilder finalCommand =
-                        new StringBuilder(resolvedPath);
+                File cmdFile = new File(resolvedPath);
 
-                for(int i=1;i<parts.length;i++){
-                    finalCommand.append(" ").append(parts[i]);
+                ProcessBuilder pb;
+
+                // =========================
+                // ELF BINARY
+                // =========================
+                if(isElf(cmdFile)){
+
+                    String[] exec = new String[parts.length];
+                    exec[0] = resolvedPath;
+
+                    for(int i=1;i<parts.length;i++){
+                        exec[i] = parts[i];
+                    }
+
+                    pb = new ProcessBuilder(exec);
+
                 }
+                // =========================
+                // SCRIPT
+                // =========================
+                else{
 
-                ProcessBuilder pb =
-                        new ProcessBuilder("sh","-c", finalCommand.toString());
+                    String[] exec = new String[parts.length + 1];
+                    exec[0] = "sh";
+                    exec[1] = resolvedPath;
+
+                    for(int i=1;i<parts.length;i++){
+                        exec[i+1] = parts[i];
+                    }
+
+                    pb = new ProcessBuilder(exec);
+
+                }
 
                 pb.directory(fs.getUserHome());
 
@@ -107,6 +155,7 @@ public class CommandRunner {
                         );
 
                 StringBuilder output = new StringBuilder();
+
                 String line;
 
                 while((line = reader.readLine()) != null){
@@ -119,10 +168,13 @@ public class CommandRunner {
 
             }
             catch(Exception e){
+
                 send("❌ Command Error: " + e.getMessage());
+
             }
 
         }).start();
+
     }
 
     // =========================
@@ -136,5 +188,7 @@ public class CommandRunner {
                         null
                 )
         );
+
     }
+
 }
