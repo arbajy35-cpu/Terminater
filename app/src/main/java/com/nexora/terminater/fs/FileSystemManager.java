@@ -8,6 +8,11 @@ public class FileSystemManager {
 
     private Context context;
 
+    // =========================
+    // CURRENT WORKING DIRECTORY
+    // =========================
+    private File userHome;
+
     public FileSystemManager(Context context){
         this.context = context;
     }
@@ -31,13 +36,28 @@ public class FileSystemManager {
     // =========================
     public File getUserHome(){
 
-        File user = new File(getRoot(), "user");
+        if(userHome == null){
 
-        if(!user.exists()){
-            user.mkdirs();
+            userHome = new File(getRoot(), "user");
+
+            if(!userHome.exists()){
+                userHome.mkdirs();
+            }
+
         }
 
-        return user;
+        return userHome;
+    }
+
+    // =========================
+    // CHANGE DIRECTORY (cd)
+    // =========================
+    public void setUserHome(File dir){
+
+        if(dir != null && dir.exists() && dir.isDirectory()){
+            this.userHome = dir;
+        }
+
     }
 
     // =========================
