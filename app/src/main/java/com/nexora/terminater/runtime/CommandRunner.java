@@ -85,41 +85,42 @@ public class CommandRunner {
                     return;
                 }
 
-                // split command
+                // =====================
+                // PARSE COMMAND
+                // =====================
                 String[] parts = commandLine.trim().split(" ");
                 String command = parts[0];
 
-                // =====================
-                // BUILTIN COMMANDS
-                // =====================
-
                 Command builtin = new Command(fs);
 
-                if(command.equals("ls")){
-                    send(builtin.ls());
-                    return;
-                }
+                // =====================
+                // BUILTIN FIRST
+                // =====================
+                switch(command){
 
-                if(command.equals("pwd")){
-                    send(builtin.pwd());
-                    return;
-                }
-
-                if(command.equals("cd")){
-
-                    if(parts.length < 2){
-                        send("");
+                    case "ls":
+                        send(builtin.ls());
                         return;
-                    }
 
-                    send(builtin.cd(parts[1]));
-                    return;
+                    case "pwd":
+                        send(builtin.pwd());
+                        return;
+
+                    case "cd":
+
+                        if(parts.length < 2){
+                            send("");
+                            return;
+                        }
+
+                        send(builtin.cd(parts[1]));
+                        return;
+
                 }
 
                 // =====================
                 // EXTERNAL COMMAND
                 // =====================
-
                 String resolvedPath = resolve(command);
 
                 if(resolvedPath == null){
@@ -131,7 +132,9 @@ public class CommandRunner {
 
                 ProcessBuilder pb;
 
+                // =====================
                 // ELF BINARY
+                // =====================
                 if(isElf(cmdFile)){
 
                     String[] exec = new String[parts.length];
@@ -144,7 +147,9 @@ public class CommandRunner {
                     pb = new ProcessBuilder(exec);
 
                 }
+                // =====================
                 // SCRIPT
+                // =====================
                 else{
 
                     String[] exec = new String[parts.length + 1];
