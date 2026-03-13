@@ -1,9 +1,7 @@
 package com.nexora.terminater.runtime;
 
 import android.webkit.WebView;
-
 import com.nexora.terminater.fs.FileSystemManager;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +21,6 @@ public class CommandRunner {
     // RESOLVE COMMAND PATH
     // =========================
     public String resolve(String command){
-
         File user = new File(fs.getUserBinDir(), command);
         File custom = new File(fs.getUserCustomDir(), command);
         File system = new File(fs.getSystemBinDir(), command);
@@ -39,24 +36,18 @@ public class CommandRunner {
     // ELF DETECTOR
     // =========================
     private boolean isElf(File file){
-
         try{
-
             FileInputStream fis = new FileInputStream(file);
-
             byte[] header = new byte[4];
             fis.read(header);
             fis.close();
-
             return header[0] == 0x7F &&
-                    header[1] == 'E' &&
-                    header[2] == 'L' &&
-                    header[3] == 'F';
-
+                   header[1] == 'E' &&
+                   header[2] == 'L' &&
+                   header[3] == 'F';
         }catch(Exception e){
             return false;
         }
-
     }
 
     // =========================
@@ -76,23 +67,34 @@ public class CommandRunner {
                 // =====================
                 // SECURITY SANDBOX
                 // =====================
-                if(commandLine.contains("..") ||
-                        commandLine.contains(".terminater")){
+                if(commandLine.contains("..") || commandLine.contains(".terminater")){
                     send("❌ Access denied");
                     return;
                 }
 
                 // =====================
-                // NORMALIZE COMMAND
+                // CLEAN & NORMALIZE INPUT
                 // =====================
-                String[] parts = commandLine.trim().split("\\s+");
-                String command = parts[0].trim().toLowerCase();
+                commandLine = commandLine
+                        .replace("\n","")
+                        .replace("\r","")
+                        .replace(";","")
+                        .trim();
 
+                // split by spaces
+                String[] parts = commandLine.split("\\s+");
+                String command = parts[0].toLowerCase();
+
+                // =====================
+                // DEBUG: SHOW COMMAND
+                // =====================
+                send("DEBUG: [" + command + "]");
+
+                // =====================
+                // BUILTIN COMMANDS
+                // =====================
                 Command builtin = new Command(fs);
 
-                // =====================
-                // BUILTIN COMMANDS FIRST
-                // =====================
                 switch(command){
 
                     case "ls":
@@ -104,63 +106,37 @@ public class CommandRunner {
                         return;
 
                     case "cd":
-
                         if(parts.length < 2){
                             send("");
                             return;
                         }
-
                         send(builtin.cd(parts[1]));
                         return;
-
                 }
 
                 // =====================
-                // EXTERNAL COMMAND
+                // EXTERNAL COMMAND (ELF / SCRIPT)
                 // =====================
                 String resolvedPath = resolve(command);
-
                 if(resolvedPath == null){
                     send("⚠️ Command not found: " + command);
                     return;
                 }
 
                 File cmdFile = new File(resolvedPath);
-
                 ProcessBuilder pb;
 
-                // =====================
-                // ELF BINARY
-                // =====================
                 if(isElf(cmdFile)){
-
                     String[] exec = new String[parts.length];
                     exec[0] = resolvedPath;
-
-                    for(int i=1;i<parts.length;i++){
-                        exec[i] = parts[i];
-                    }
-
+                    for(int i=1;i<parts.length;i++) exec[i] = parts[i];
                     pb = new ProcessBuilder(exec);
-
-                }
-
-                // =====================
-                // SCRIPT
-                // =====================
-                else{
-
+                }else{
                     String[] exec = new String[parts.length + 1];
-
                     exec[0] = "sh";
                     exec[1] = resolvedPath;
-
-                    for(int i=1;i<parts.length;i++){
-                        exec[i+1] = parts[i];
-                    }
-
+                    for(int i=1;i<parts.length;i++) exec[i+1] = parts[i];
                     pb = new ProcessBuilder(exec);
-
                 }
 
                 pb.directory(fs.getUserHome());
@@ -168,54 +144,40 @@ public class CommandRunner {
 
                 pb.environment().put(
                         "PATH",
-                        fs.getUserBinDir().getAbsolutePath()
-                                + ":" +
-                                fs.getUserCustomDir().getAbsolutePath()
-                                + ":" +
-                                fs.getSystemBinDir().getAbsolutePath()
+                        fs.getUserBinDir().getAbsolutePath() + ":" +
+                        fs.getUserCustomDir().getAbsolutePath() + ":" +
+                        fs.getSystemBinDir().getAbsolutePath()
                 );
 
                 Process process = pb.start();
 
-                BufferedReader reader =
-                        new BufferedReader(
-                                new InputStreamReader(
-                                        process.getInputStream()
-                                )
-                        );
-
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 StringBuilder output = new StringBuilder();
                 String line;
-
                 while((line = reader.readLine()) != null){
                     output.append(line).append("\n");
                 }
 
                 process.waitFor();
-
                 send(output.toString());
 
-            }
-            catch(Exception e){
+            }catch(Exception e){
                 send("❌ Command Error: " + e.getMessage());
             }
 
         }).start();
-
     }
 
     // =========================
     // SEND OUTPUT TO WEBVIEW
     // =========================
     private void send(String message){
-
         webView.post(() ->
                 webView.evaluateJavascript(
                         "printOutput("+org.json.JSONObject.quote(message)+");",
                         null
                 )
         );
-
     }
 
 }
