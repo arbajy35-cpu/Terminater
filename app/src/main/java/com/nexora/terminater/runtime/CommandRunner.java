@@ -55,9 +55,14 @@ public class CommandRunner {
     // =========================
     public void run(String commandLine){
 
+        // Final copy for lambda (fixes "effectively final" issue)
+        final String inputLine = commandLine;
+
         new Thread(() -> {
 
             try{
+
+                String commandLine = inputLine; // safe to modify now
 
                 if(commandLine == null || commandLine.trim().isEmpty()){
                     send("");
@@ -95,15 +100,12 @@ public class CommandRunner {
                 Command builtin = new Command(fs);
 
                 switch(command){
-
                     case "ls":
                         send(builtin.ls());
                         return;
-
                     case "pwd":
                         send(builtin.pwd());
                         return;
-
                     case "cd":
                         if(parts.length < 2){
                             send("");
