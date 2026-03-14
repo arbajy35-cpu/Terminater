@@ -62,9 +62,10 @@ public class CommandRunner {
 
             try{
 
-                String commandLine = inputLine; // safe to modify now
+                // Use a new variable inside lambda
+                String cmdLine = inputLine; // safe to modify
 
-                if(commandLine == null || commandLine.trim().isEmpty()){
+                if(cmdLine == null || cmdLine.trim().isEmpty()){
                     send("");
                     return;
                 }
@@ -72,7 +73,7 @@ public class CommandRunner {
                 // =====================
                 // SECURITY SANDBOX
                 // =====================
-                if(commandLine.contains("..") || commandLine.contains(".terminater")){
+                if(cmdLine.contains("..") || cmdLine.contains(".terminater")){
                     send("❌ Access denied");
                     return;
                 }
@@ -80,13 +81,9 @@ public class CommandRunner {
                 // =====================
                 // CLEAN & NORMALIZE INPUT
                 // =====================
-                commandLine = commandLine
-                        .replace("\n","")
-                        .replace("\r","")
-                        .replace(";","")
-                        .trim();
+                cmdLine = cmdLine.replace("\n","").replace("\r","").replace(";","").trim();
 
-                String[] parts = commandLine.split("\\s+");
+                String[] parts = cmdLine.split("\\s+");
                 String command = parts[0].toLowerCase();
 
                 // =====================
