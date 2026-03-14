@@ -1,32 +1,38 @@
 package com.nexora.terminater.runtime;
 
+import android.content.Context;
 import android.webkit.WebView;
 import com.nexora.terminater.fs.FileSystemManager;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+
+import java.io.*;
 
 public class CommandRunner {
 
     private FileSystemManager fs;
     private WebView webView;
+    private File safeBinDir;
 
-    public CommandRunner(FileSystemManager fs, WebView webView){
+    public CommandRunner(FileSystemManager fs, WebView webView, Context context){
         this.fs = fs;
         this.webView = webView;
+        // Safe directory for ELF binaries
+        safeBinDir = new File(context.getFilesDir(), "bin");
+        if (!safeBinDir.exists()) safeBinDir.mkdirs();
     }
 
     // =========================
     // RESOLVE COMMAND PATH
     // =========================
     public String resolve(String command){
+        // Check built-in dirs
         File user = new File(fs.getUserBinDir(), command);
         File custom = new File(fs.getUserCustomDir(), command);
         File system = new File(fs.getSystemBinDir(), command);
+        File safe = new File(safeBinDir, command);
 
         if(user.exists()) return user.getAbsolutePath();
         if(custom.exists()) return custom.getAbsolutePath();
+        if(safe.exists()) return safe.getAbsolutePath();
         if(system.exists()) return system.getAbsolutePath();
 
         return null;
@@ -36,16 +42,14 @@ public class CommandRunner {
     // ELF DETECTOR
     // =========================
     private boolean isElf(File file){
-        try{
-            FileInputStream fis = new FileInputStream(file);
+        try(FileInputStream fis = new FileInputStream(file)){
             byte[] header = new byte[4];
             fis.read(header);
-            fis.close();
             return header[0] == 0x7F &&
                    header[1] == 'E' &&
                    header[2] == 'L' &&
                    header[3] == 'F';
-        }catch(Exception e){
+        } catch(Exception e){
             return false;
         }
     }
@@ -54,67 +58,38 @@ public class CommandRunner {
     // RUN TERMINAL COMMAND
     // =========================
     public void run(String commandLine){
-
-        // Final copy for lambda (fixes "effectively final" issue)
         final String inputLine = commandLine;
 
         new Thread(() -> {
-
             try{
-
-                // Use a new variable inside lambda
-                String cmdLine = inputLine; // safe to modify
-
+                String cmdLine = inputLine;
                 if(cmdLine == null || cmdLine.trim().isEmpty()){
                     send("");
                     return;
                 }
 
-                // =====================
                 // SECURITY SANDBOX
-                // =====================
                 if(cmdLine.contains("..") || cmdLine.contains(".terminater")){
                     send("❌ Access denied");
                     return;
                 }
 
-                // =====================
-                // CLEAN & NORMALIZE INPUT
-                // =====================
+                // CLEAN & NORMALIZE
                 cmdLine = cmdLine.replace("\n","").replace("\r","").replace(";","").trim();
-
                 String[] parts = cmdLine.split("\\s+");
                 String command = parts[0].toLowerCase();
 
-                // =====================
-                // DEBUG: SHOW COMMAND
-                // =====================
-                send("DEBUG: [" + command + "]");
-
-                // =====================
                 // BUILTIN COMMANDS
-                // =====================
                 Command builtin = new Command(fs);
-
                 switch(command){
-                    case "ls":
-                        send(builtin.ls());
-                        return;
-                    case "pwd":
-                        send(builtin.pwd());
-                        return;
+                    case "ls": send(builtin.ls()); return;
+                    case "pwd": send(builtin.pwd()); return;
                     case "cd":
-                        if(parts.length < 2){
-                            send("");
-                            return;
-                        }
-                        send(builtin.cd(parts[1]));
-                        return;
+                        if(parts.length < 2){ send(""); return; }
+                        send(builtin.cd(parts[1])); return;
                 }
 
-                // =====================
-                // EXTERNAL COMMAND (ELF / SCRIPT)
-                // =====================
+                // EXTERNAL COMMAND
                 String resolvedPath = resolve(command);
                 if(resolvedPath == null){
                     send("⚠️ Command not found: " + command);
@@ -125,11 +100,13 @@ public class CommandRunner {
                 ProcessBuilder pb;
 
                 if(isElf(cmdFile)){
+                    // Use safe bin path
+                    String safePath = new File(safeBinDir, cmdFile.getName()).getAbsolutePath();
                     String[] exec = new String[parts.length];
-                    exec[0] = resolvedPath;
+                    exec[0] = safePath;
                     for(int i=1;i<parts.length;i++) exec[i] = parts[i];
                     pb = new ProcessBuilder(exec);
-                }else{
+                } else {
                     String[] exec = new String[parts.length + 1];
                     exec[0] = "sh";
                     exec[1] = resolvedPath;
@@ -144,25 +121,23 @@ public class CommandRunner {
                         "PATH",
                         fs.getUserBinDir().getAbsolutePath() + ":" +
                         fs.getUserCustomDir().getAbsolutePath() + ":" +
-                        fs.getSystemBinDir().getAbsolutePath()
+                        fs.getSystemBinDir().getAbsolutePath() + ":" +
+                        safeBinDir.getAbsolutePath()
                 );
 
                 Process process = pb.start();
-
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 StringBuilder output = new StringBuilder();
                 String line;
                 while((line = reader.readLine()) != null){
                     output.append(line).append("\n");
                 }
-
                 process.waitFor();
                 send(output.toString());
 
-            }catch(Exception e){
+            } catch(Exception e){
                 send("❌ Command Error: " + e.getMessage());
             }
-
         }).start();
     }
 
@@ -171,11 +146,10 @@ public class CommandRunner {
     // =========================
     private void send(String message){
         webView.post(() ->
-                webView.evaluateJavascript(
-                        "printOutput("+org.json.JSONObject.quote(message)+");",
-                        null
-                )
+            webView.evaluateJavascript(
+                "printOutput("+org.json.JSONObject.quote(message)+");",
+                null
+            )
         );
     }
-
 }
