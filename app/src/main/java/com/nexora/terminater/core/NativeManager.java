@@ -21,8 +21,9 @@ public class NativeManager {
 
         FileSystemManager fs = new FileSystemManager(context);
 
-        scriptRunner = new ScriptRunner(fs, webView);
-        commandRunner = new CommandRunner(fs, webView);
+        // ✅ FIXED CONSTRUCTORS
+        scriptRunner = new ScriptRunner(fs, webView, context);
+        commandRunner = new CommandRunner(fs, webView, context);
 
         packageInstaller = new PackageInstaller(fs, webView);
         scriptStorage = new ScriptStorage(fs, webView);
@@ -91,5 +92,4 @@ public class NativeManager {
 
         scriptStorage.save(name.trim(), content);
     }
-
 }

@@ -10,21 +10,29 @@ public class CommandRunner {
 
     private FileSystemManager fs;
     private WebView webView;
+    private Context context;
     private File safeBinDir;
 
+    // =========================
+    // CONSTRUCTOR
+    // =========================
     public CommandRunner(FileSystemManager fs, WebView webView, Context context){
         this.fs = fs;
         this.webView = webView;
-        // Safe directory for ELF binaries
+        this.context = context;
+
+        // Safe directory for binaries
         safeBinDir = new File(context.getFilesDir(), "bin");
-        if (!safeBinDir.exists()) safeBinDir.mkdirs();
+        if(!safeBinDir.exists()){
+            safeBinDir.mkdirs();
+        }
     }
 
     // =========================
     // RESOLVE COMMAND PATH
     // =========================
     public String resolve(String command){
-        // Check built-in dirs
+
         File user = new File(fs.getUserBinDir(), command);
         File custom = new File(fs.getUserCustomDir(), command);
         File system = new File(fs.getSystemBinDir(), command);
@@ -43,13 +51,16 @@ public class CommandRunner {
     // =========================
     private boolean isElf(File file){
         try(FileInputStream fis = new FileInputStream(file)){
+
             byte[] header = new byte[4];
             fis.read(header);
+
             return header[0] == 0x7F &&
                    header[1] == 'E' &&
                    header[2] == 'L' &&
                    header[3] == 'F';
-        } catch(Exception e){
+
+        }catch(Exception e){
             return false;
         }
     }
@@ -58,11 +69,15 @@ public class CommandRunner {
     // RUN TERMINAL COMMAND
     // =========================
     public void run(String commandLine){
+
         final String inputLine = commandLine;
 
         new Thread(() -> {
+
             try{
+
                 String cmdLine = inputLine;
+
                 if(cmdLine == null || cmdLine.trim().isEmpty()){
                     send("");
                     return;
@@ -74,23 +89,49 @@ public class CommandRunner {
                     return;
                 }
 
-                // CLEAN & NORMALIZE
-                cmdLine = cmdLine.replace("\n","").replace("\r","").replace(";","").trim();
+                // CLEAN INPUT
+                cmdLine = cmdLine
+                        .replace("\n","")
+                        .replace("\r","")
+                        .replace(";","")
+                        .trim();
+
                 String[] parts = cmdLine.split("\\s+");
                 String command = parts[0].toLowerCase();
 
+                // =====================
                 // BUILTIN COMMANDS
+                // =====================
+
                 Command builtin = new Command(fs);
+
                 switch(command){
-                    case "ls": send(builtin.ls()); return;
-                    case "pwd": send(builtin.pwd()); return;
+
+                    case "ls":
+                        send(builtin.ls());
+                        return;
+
+                    case "pwd":
+                        send(builtin.pwd());
+                        return;
+
                     case "cd":
-                        if(parts.length < 2){ send(""); return; }
-                        send(builtin.cd(parts[1])); return;
+
+                        if(parts.length < 2){
+                            send("");
+                            return;
+                        }
+
+                        send(builtin.cd(parts[1]));
+                        return;
                 }
 
+                // =====================
                 // EXTERNAL COMMAND
+                // =====================
+
                 String resolvedPath = resolve(command);
+
                 if(resolvedPath == null){
                     send("⚠️ Command not found: " + command);
                     return;
@@ -100,17 +141,30 @@ public class CommandRunner {
                 ProcessBuilder pb;
 
                 if(isElf(cmdFile)){
-                    // Use safe bin path
+
                     String safePath = new File(safeBinDir, cmdFile.getName()).getAbsolutePath();
+
                     String[] exec = new String[parts.length];
+
                     exec[0] = safePath;
-                    for(int i=1;i<parts.length;i++) exec[i] = parts[i];
+
+                    for(int i=1;i<parts.length;i++){
+                        exec[i] = parts[i];
+                    }
+
                     pb = new ProcessBuilder(exec);
-                } else {
+
+                }else{
+
                     String[] exec = new String[parts.length + 1];
+
                     exec[0] = "sh";
                     exec[1] = resolvedPath;
-                    for(int i=1;i<parts.length;i++) exec[i+1] = parts[i];
+
+                    for(int i=1;i<parts.length;i++){
+                        exec[i+1] = parts[i];
+                    }
+
                     pb = new ProcessBuilder(exec);
                 }
 
@@ -126,18 +180,28 @@ public class CommandRunner {
                 );
 
                 Process process = pb.start();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream())
+                );
+
                 StringBuilder output = new StringBuilder();
                 String line;
+
                 while((line = reader.readLine()) != null){
                     output.append(line).append("\n");
                 }
+
                 process.waitFor();
+
                 send(output.toString());
 
-            } catch(Exception e){
+            }catch(Exception e){
+
                 send("❌ Command Error: " + e.getMessage());
+
             }
+
         }).start();
     }
 
@@ -145,11 +209,14 @@ public class CommandRunner {
     // SEND OUTPUT TO WEBVIEW
     // =========================
     private void send(String message){
+
         webView.post(() ->
+
             webView.evaluateJavascript(
-                "printOutput("+org.json.JSONObject.quote(message)+");",
+                "printOutput(" + org.json.JSONObject.quote(message) + ");",
                 null
             )
+
         );
     }
 }

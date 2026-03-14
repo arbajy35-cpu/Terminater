@@ -77,6 +77,7 @@ public class MainActivity extends Activity {
         // GPU HARDWARE RENDERING
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
+        // WEBVIEW CLIENTS
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
 
@@ -90,12 +91,31 @@ public class MainActivity extends Activity {
         // =========================
         // JAVASCRIPT BRIDGES
         // =========================
-        webView.addJavascriptInterface(new Bridge(this, webView), "AndroidBridge");
-        webView.addJavascriptInterface(new NativeManager(this, webView), "AndroidNative");
+        webView.addJavascriptInterface(
+                new Bridge(this, webView),
+                "AndroidBridge"
+        );
+
+        webView.addJavascriptInterface(
+                new NativeManager(this, webView),
+                "AndroidNative"
+        );
 
         // =========================
         // LOAD TERMINAL UI
         // =========================
         webView.loadUrl("file:///android_asset/ui/index.html");
+    }
+
+    // =========================
+    // HANDLE BACK BUTTON
+    // =========================
+    @Override
+    public void onBackPressed() {
+        if(webView != null && webView.canGoBack()){
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
