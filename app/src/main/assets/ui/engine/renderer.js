@@ -3,39 +3,42 @@ try{
 
 function printOutput(text,isCommand=false){
 
-if(!text) return;
+    if(!text) return;
 
-text.split("\n").forEach(line=>{
+    text.split("\n").forEach(line=>{
 
-if(line.trim() !== ""){
+        if(line.trim() !== ""){
 
-const isError =
-!isCommand &&
-(
-line.toLowerCase().includes("error") ||
-line.toLowerCase().includes("failed") ||
-line.toLowerCase().includes("not found")
-);
+            const isError =
+                !isCommand &&
+                (
+                    line.toLowerCase().includes("error") ||
+                    line.toLowerCase().includes("failed") ||
+                    line.toLowerCase().includes("not found")
+                );
 
-if(typeof addLine === "function"){
-addLine(line,isCommand,isError);
-}
+            if(typeof addLine === "function"){
+                addLine(line,isCommand,isError);
+            }
 
-}
+            // 🔹 Optional Debug
+            console.log("DEBUG JS Output:", line);
 
-});
+        }
 
-if(typeof scrollBottom === "function"){
-scrollBottom();
-}
+    });
+
+    if(typeof scrollBottom === "function"){
+        scrollBottom();
+    }
 
 }
 
 function scrollBottom(){
 
-if(typeof terminal !== "undefined" && terminal){
-terminal.scrollTop = terminal.scrollHeight;
-}
+    if(typeof terminal !== "undefined" && terminal){
+        terminal.scrollTop = terminal.scrollHeight;
+    }
 
 }
 

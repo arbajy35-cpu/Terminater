@@ -81,7 +81,6 @@ public class CommandRunner {
                         .replace(";","")
                         .trim();
 
-                // split by spaces
                 String[] parts = commandLine.split("\\s+");
                 String command = parts[0].toLowerCase();
 

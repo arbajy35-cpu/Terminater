@@ -1,104 +1,84 @@
 // ----------------- INPUT MODULE -----------------
-try{
+try {
 
-const input = document.querySelector("input");
+    const input = document.querySelector("input");
 
-let history = [];
-let historyIndex = -1;
+    let history = [];
+    let historyIndex = -1;
 
-window.input = input;
+    window.input = input;
 
-input.addEventListener("keydown", function(e){
+    input.addEventListener("keydown", function(e) {
 
-try{
+        try {
 
-// typing keys
-if(e.key.length === 1){
+            // typing keys
+            if (e.key.length === 1) {
+                if (window.playTypingSound) playTypingSound("type");
+            }
 
-if(window.playTypingSound)
-playTypingSound("type");
+            // backspace
+            else if (e.key === "Backspace") {
+                if (window.playTypingSound) playTypingSound("backspace");
+            }
 
-}
+            // ENTER
+            else if (e.key === "Enter") {
+                e.preventDefault();
 
-// backspace
-else if(e.key === "Backspace"){
+                // -----------------------------
+                // STRONG INPUT CLEAN & DEBUG
+                // -----------------------------
+                let command = input.value.replace(/[\r\n;]/g, "").trim();
+                if (!command) return;
 
-if(window.playTypingSound)
-playTypingSound("backspace");
+                // Debug line to check exactly what JS is sending
+                if (window.addLine) addLine("DEBUG JS: [" + command + "]", true);
 
-}
+                history.push(command);
+                historyIndex = history.length;
 
-// ENTER
-else if(e.key === "Enter"){
+                if (window.playTypingSound) playTypingSound("enter");
 
-e.preventDefault();
+                if (window.addLine) addLine("~ $ " + command, true);
 
-const command = input.value.trim();
-if(!command) return;
+                if (window.executeCommand) executeCommand(command);
 
-history.push(command);
-historyIndex = history.length;
+                input.value = "";
 
-if(window.playTypingSound)
-playTypingSound("enter");
+                if (window.scrollBottom) scrollBottom();
+            }
 
-if(window.addLine)
-addLine("~ $ " + command, true);
+            // HISTORY UP
+            else if (e.key === "ArrowUp") {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    input.value = history[historyIndex];
+                }
+            }
 
-if(window.executeCommand)
-executeCommand(command);
+            // HISTORY DOWN
+            else if (e.key === "ArrowDown") {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    input.value = history[historyIndex];
+                } else {
+                    input.value = "";
+                }
+            }
 
-input.value="";
+        } catch (err) {
+            console.warn("Input handler error", err);
+        }
 
-if(window.scrollBottom)
-scrollBottom();
+    });
 
-}
+    window.engineModuleReady = window.engineModuleReady || {};
+    window.engineModuleReady.input = true;
 
-// HISTORY UP
-else if(e.key === "ArrowUp"){
+    console.log("Input module ready");
 
-if(historyIndex>0){
-
-historyIndex--;
-input.value = history[historyIndex];
-
-}
-
-}
-
-// HISTORY DOWN
-else if(e.key === "ArrowDown"){
-
-if(historyIndex < history.length-1){
-
-historyIndex++;
-input.value = history[historyIndex];
-
-}else{
-
-input.value="";
-
-}
-
-}
-
-}catch(err){
-
-console.warn("Input handler error",err);
-
-}
-
-});
-
-window.engineModuleReady = window.engineModuleReady || {};
-window.engineModuleReady.input = true;
-
-console.log("Input module ready");
-
-}catch(e){
-
-console.warn("Input module crashed",e);
-window.input={};
-
+} catch (e) {
+    console.warn("Input module crashed", e);
+    window.input = {};
 }

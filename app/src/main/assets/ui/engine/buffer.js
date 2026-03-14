@@ -32,10 +32,13 @@ function addLine(text, isCommand = false, isError = false) {
 
   if (inputLine) {
     terminal.insertBefore(line, inputLine);
-  } 
+  }
   else {
     terminal.appendChild(line);
   }
+
+  // 🔹 Optional Debug
+  console.log("DEBUG JS addLine:", text);
 
 }
 
