@@ -30,7 +30,8 @@ public class Bridge {
 
         FileSystemManager fs = new FileSystemManager(context);
 
-        commandRunner = new CommandRunner(fs, webView);
+        // ✅ FIX: Pass context as third argument
+        commandRunner = new CommandRunner(fs, webView, context);
     }
 
     // =========================
